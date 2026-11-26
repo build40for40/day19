@@ -439,17 +439,20 @@ button:active {
   fill: var(--danger);
 }
 
+.feather-tip,
 .feather {
   stroke: var(--text);
+  stroke-linejoin: round;
+}
+
+.feather-tip {
+  fill: var(--bg-soft);
   stroke-width: 2;
 }
 
-.feather.thanked {
+.feather {
   fill: var(--treat);
-}
-
-.feather.gone {
-  fill: var(--line-strong);
+  stroke-width: 1.2;
 }
 
 /* Three pecks, one for each crumb. */

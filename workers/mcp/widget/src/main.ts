@@ -54,17 +54,26 @@ function buzz(pattern: number | number[]) {
   }
 }
 
-/** The turkey on the done screen: a small four-feather tail, gold and grey, and it gobbles up the crumbs. */
-const TAIL = ['thanked', 'gone', 'thanked', 'gone']
+/**
+ * The turkey's tail: four rounded feathers side by side with pale tips, fanning up from behind the back to the head,
+ * stretched a little taller than a half circle. Each feather is drawn twice, the pale tip and then the gold inside it.
+ */
+const TAIL = `<g transform="translate(0 52) scale(1 1.25) translate(0 -52)">
+  <path class="feather-tip" d="M40 52L5.5 58.1A11.4 11.4 0 0 1 8.2 37.5Z"/>
+  <path class="feather-tip" d="M40 52L8.2 37.5A11.4 11.4 0 0 1 22 22Z"/>
+  <path class="feather-tip" d="M40 52L22 22A11.4 11.4 0 0 1 42.1 17.1Z"/>
+  <path class="feather-tip" d="M40 52L42.1 17.1A11.4 11.4 0 0 1 61.5 24.4Z"/>
+  <path class="feather" d="M40 52L10.9 57.1A9.6 9.6 0 0 1 13.2 39.8Z"/>
+  <path class="feather" d="M40 52L13.2 39.8A9.6 9.6 0 0 1 24.8 26.7Z"/>
+  <path class="feather" d="M40 52L24.8 26.7A9.6 9.6 0 0 1 41.8 22.6Z"/>
+  <path class="feather" d="M40 52L41.8 22.6A9.6 9.6 0 0 1 58.2 28.8Z"/>
+</g>`
 
+/** The turkey on the done screen. It pecks up the crumbs. Nothing from the contacts goes into it. */
 function turkey() {
-  const feathers = TAIL.map(
-    (colour, i) =>
-      `<g transform="rotate(${-90 + 30 * i} 44 50)"><ellipse class="feather ${colour}" cx="44" cy="27" rx="4.5" ry="12.5"/></g>`,
-  ).join('')
   const bird = h('div', { class: 'turkey' })
   bird.innerHTML = `<svg viewBox="0 0 104 76" width="104" height="76" aria-hidden="true">
-  ${feathers}
+  ${TAIL}
   <path class="bird-line" d="M38 66v6M50 66v6M34 72h8M46 72h8"/>
   <circle class="bird-body" cx="44" cy="50" r="17"/>
   <path class="bird-wing" d="M34 50c2 8 12 9 16 2"/>
