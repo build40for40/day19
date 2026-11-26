@@ -25,7 +25,7 @@ type Outcome = { kind: 'kept'; gratitude: string } | { kind: 'let_go' } | { kind
 const fake = new URLSearchParams(location.search).has('fake') || window.parent === window
 
 const root = document.getElementById('app')!
-const app = new App({ name: 'Day 19 contacts', version: '0.2.0' })
+const app = new App({ name: 'Gobbler', version: '0.3.0' })
 const tools: Tools = fake ? fakeTools() : mcpTools(app)
 
 let batch: Contact[] | undefined
@@ -35,6 +35,10 @@ let keeping = false
 let busy = false
 let problem = ''
 let draft = ''
+
+const EXAMPLES = ['She told me my writing was worth reading', 'He taught me…', 'I still remember when…']
+/** The grey example in the box. It stays the same for a contact, and changes from one contact to the next. */
+const example = (contact: Contact) => EXAMPLES[(batch?.indexOf(contact) ?? 0) % EXAMPLES.length] ?? EXAMPLES[0]!
 
 const firstName = (contact: Contact) => contact.name.split(' ')[0] ?? contact.name
 const initials = (contact: Contact) =>
@@ -86,7 +90,7 @@ async function decide(contact: Contact, run: () => Promise<{ progress: Progress 
     // Tell the assistant what happened in the widget, so it doesn't offer the same contact again.
     if (!fake) void app.updateModelContext({ content: [{ type: 'text', text: said }] }).catch(() => {})
   } catch (error) {
-    const message = error instanceof Error ? error.message : "That didn't save. Try again."
+    const message = error instanceof Error ? error.message : "That didn't save. Give it another go."
     await catchUp().catch(() => {})
     busy = false
     // If it turned out to be decided already, just move on to the next one.
@@ -98,8 +102,8 @@ async function decide(contact: Contact, run: () => Promise<{ progress: Progress 
 
 function top(current: number) {
   const contacts = batch ?? []
-  const today = current < contacts.length ? `Contact ${current + 1} of ${contacts.length} today` : 'Done for today'
-  const overall = progress ? `${progress.decided} of ${progress.total} decided` : ''
+  const today = current < contacts.length ? `${current + 1} of ${contacts.length} today` : 'Done for today'
+  const overall = progress ? `${progress.decided} of ${progress.total} sorted` : ''
   return h(
     'div',
     { class: 'top' },
@@ -161,13 +165,13 @@ function choose(contact: Contact) {
         'Keep',
       ),
     ),
-    h('p', { class: 'hint' }, 'Let go deletes them from your contacts, and from any phone synced to them. A copy stays in your Brain.'),
+    h('p', { class: 'hint' }, "Let go deletes them from Google Contacts and any phone synced to it. Your Brain keeps a copy, so nobody's lost."),
     h('p', { class: 'error', role: 'alert' }, problem),
   )
 }
 
 function gratitude(contact: Contact) {
-  const box = h('textarea', { id: 'gratitude', maxlength: String(MAX_GRATITUDE), placeholder: 'She told me my writing was worth reading' })
+  const box = h('textarea', { id: 'gratitude', maxlength: String(MAX_GRATITUDE), placeholder: example(contact) })
   box.value = draft
   const error = h('p', { class: 'error', role: 'alert' }, problem)
 
@@ -180,7 +184,7 @@ function gratitude(contact: Contact) {
   const save = () => {
     const text = box.value.trim()
     if (text.length < MIN_GRATITUDE) {
-      error.textContent = problem = "Say what you're grateful for first"
+      error.textContent = problem = `No thanks, no keep. Give ${firstName(contact)} a line first.`
       return
     }
     void decide(
@@ -194,7 +198,7 @@ function gratitude(contact: Contact) {
   return h(
     'div',
     {},
-    h('label', { for: 'gratitude' }, `What are you grateful to ${firstName(contact)} for? `),
+    h('label', { for: 'gratitude' }, `What are you grateful to ${firstName(contact)} for?`),
     box,
     error,
     h(
@@ -211,9 +215,15 @@ function gratitude(contact: Contact) {
         },
         'Back',
       ),
-      h('button', { class: 'primary grow', 'aria-busy': String(busy), click: save }, 'Save and keep'),
+      h('button', { class: 'primary grow', 'aria-busy': String(busy), click: save }, `Keep ${firstName(contact)}`),
     ),
   )
+}
+
+/** What's waiting after today, so the done screen never promises five when fewer are left. */
+function tomorrow() {
+  const left = progress ? progress.total - progress.decided : 5
+  return left >= 5 ? 'Five more tomorrow.' : left > 0 ? 'The last few tomorrow.' : "That's everyone."
 }
 
 function done(contacts: Contact[]) {
@@ -227,8 +237,8 @@ function done(contacts: Contact[]) {
   return h(
     'div',
     { class: 'card' },
-    h('p', { class: 'done-title' }, contacts.length ? `That's your ${contacts.length === 5 ? 'five' : 'lot'} for today` : "That's today done"),
-    h('p', { class: 'done-body' }, contacts.length ? `${kept} kept with thanks, ${letGo} let go. More tomorrow.` : 'More contacts tomorrow.'),
+    h('p', { class: 'done-title' }, contacts.length ? `That's your ${contacts.length === 5 ? 'five' : 'lot'}. Well gobbled.` : "That's today done"),
+    h('p', { class: 'done-body' }, contacts.length ? `${kept} thanked, ${letGo} let go. ${tomorrow()}` : 'More contacts tomorrow.'),
     contacts.length > 0 && h('ul', { class: 'list' }, ...contacts.map(line)),
     !fake &&
       h(
@@ -245,7 +255,7 @@ function done(contacts: Contact[]) {
 
 function render() {
   if (!batch) {
-    root.replaceChildren(h('div', { class: 'top' }, h('span', {}, problem || "Finding today's contacts…")))
+    root.replaceChildren(h('div', { class: 'top' }, h('span', {}, problem || "Rounding up today's five…")))
     return
   }
   const current = batch.findIndex((contact) => !outcomes.has(contact.id))

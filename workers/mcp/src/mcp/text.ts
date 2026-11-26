@@ -1,6 +1,6 @@
 import { BATCH_SIZE, MAX_GRATITUDE, TOOL, type Batch, type Decided, type Progress } from '../contract'
 
-export const SERVER_NAME = 'day19'
+export const SERVER_NAME = 'gobbler'
 
 
 export const SERVER_INSTRUCTIONS = `This server is a daily game for cleaning up a contacts list with gratitude. Each day it surfaces ${BATCH_SIZE} contacts. Each one is either let go, or kept by saying what the person is grateful to them for. Everything is saved to the person's Brain, a markdown file, so nobody is ever lost.
@@ -14,7 +14,7 @@ export const SERVER_INSTRUCTIONS = `This server is a daily game for cleaning up 
 
 export const TEXT = {
   start: {
-    title: 'Start the game',
+    title: "Gobbler: today's five",
     description: `Opens the keep or let go widget with today's ${BATCH_SIZE} contacts. Call this to start, or to show what is left today.`,
   },
   next: {
