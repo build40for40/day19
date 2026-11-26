@@ -44,4 +44,4 @@ export const privacyBody = `<h1>Privacy</h1>
 
 <h2>Questions</h2>
 <p>Email <a href="mailto:hello@40for40.app">hello@40for40.app</a>.</p>
-<p><a href="/">Back to the app</a></p>`;
+<p><a href="./">Back to the app</a></p>`;

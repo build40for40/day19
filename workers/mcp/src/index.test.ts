@@ -62,17 +62,20 @@ describe("worker", () => {
     }
     for (const path of ["/", "/privacy"]) {
       const html = await (await call(path)).text();
-      expect(html).toContain('<link rel="icon" type="image/svg+xml" href="/turkey.svg">');
-      expect(html).toContain('<link rel="icon" href="/favicon.ico" sizes="32x32">');
+      expect(html).toContain('<link rel="icon" type="image/svg+xml" href="turkey.svg">');
+      expect(html).toContain('<link rel="icon" href="favicon.ico" sizes="32x32">');
     }
   });
 
-  it("sends build40for40.com/gobbler and the old workers.dev address to the app's own host", async () => {
+  it("serves the same site at build40for40.com/gobbler/, and sends the app's routes to the app's own host", async () => {
     const fetchAt = (url: string) => exports.default.fetch(url, { redirect: "manual" });
-    const site = await fetchAt("https://build40for40.com/gobbler/privacy?x=1");
-    expect(site.status).toBe(301);
-    expect(site.headers.get("Location")).toBe("https://example.com/privacy?x=1");
-    expect((await fetchAt("https://build40for40.com/gobbler")).headers.get("Location")).toBe("https://example.com/");
+    expect(await (await fetchAt("https://build40for40.com/gobbler/")).text()).toBe(await (await call("/")).text());
+    expect((await fetchAt("https://build40for40.com/gobbler/widget-keep.png")).status).toBe(200);
+    expect(await (await fetchAt("https://build40for40.com/gobbler/privacy")).text()).toContain("Google API Services User Data Policy");
+    expect((await fetchAt("https://build40for40.com/gobbler?x=1")).headers.get("Location")).toBe("https://build40for40.com/gobbler/?x=1");
+    const mcp = await fetchAt("https://build40for40.com/gobbler/mcp?x=1");
+    expect(mcp.status).toBe(301);
+    expect(mcp.headers.get("Location")).toBe("https://example.com/mcp?x=1");
     expect((await fetchAt("https://day19.40for40.workers.dev/mcp")).headers.get("Location")).toBe("https://example.com/mcp");
     // Other paths on the main site aren't ours, and the app's own host is never redirected.
     expect((await fetchAt("https://build40for40.com/gobblers")).status).not.toBe(301);
@@ -85,6 +88,6 @@ describe("worker", () => {
     const text = await privacy.text();
     expect(text).toContain("Google API Services User Data Policy");
     expect(text).toContain("hello@40for40.app");
-    expect(await (await call("/")).text()).toContain('href="/privacy"');
+    expect(await (await call("/")).text()).toContain('href="privacy"');
   });
 });
