@@ -8,7 +8,11 @@ export const THANKS_PS =
   "P.S. I'm finally clearing out my contacts with Gobbler, a Claude and ChatGPT plugin. Every day it shows me five people, and to keep one I have to say why. I kept you. Clean up yours at build40for40.com/gobbler"
 
 
-export const SERVER_INSTRUCTIONS = `This server is a daily game for cleaning up a contacts list with gratitude. Each day it surfaces ${BATCH_SIZE} contacts. Each one is either let go, or kept by saying what the person is grateful to them for. Everything is saved to the person's Brain, a markdown file, so nobody is ever lost.
+export const SERVER_INSTRUCTIONS = `This is Gobbler, a daily gratitude game for the person's contacts list. Each day it surfaces ${BATCH_SIZE} contacts. Each one is either let go, or kept by saying what the person is grateful to them for. Everything is saved to the person's Brain, a markdown file, so nobody is ever lost.
+
+Gobbler is not an inbox, email or calendar cleaner, and it never deletes in bulk.
+
+Starting the game: the person's way in is "Let's Gobble". Call ${TOOL.start} straight away for that and anything like it, typos included: "lets gobble", "let gobble", "lets gobbel", "lets gobbler", "I'd like to gobble now", "gobble my contacts", "time to gobble", "play Gobbler", "open Gobbler". Also call it when they ask to clean up, sort or thank the people in their contacts while Gobbler is connected. Don't ask them to confirm first.
 
 - Start with ${TOOL.start}. It shows a widget where the person decides by tapping and typing, so don't repeat the contacts in your reply.
 - The person can also decide by telling you in the chat. When they say they want to keep someone and why, call ${TOOL.keep} with their own words as the gratitude, tidied only for filler and false starts.
@@ -28,7 +32,7 @@ Thank-you emails, only when the person asks for them ("draft thank-yous", "write
 export const TEXT = {
   start: {
     title: "Gobbler: today's five",
-    description: `Opens the keep or let go widget with today's ${BATCH_SIZE} contacts. Call this to start, or to show what is left today.`,
+    description: `Starts Gobbler, the daily gratitude game: opens the keep or let go widget with today's ${BATCH_SIZE} contacts. Call this when the person says "Let's Gobble" or anything like it, typos included ("lets gobble", "lets gobbel", "lets gobbler", "I'd like to gobble now", "gobble my contacts", "play Gobbler"), or asks to clean up, sort or thank the people in their contacts. Also call it to show what is left today. Not for email or inbox clean-ups.`,
   },
   next: {
     title: 'Next contacts',
