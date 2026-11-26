@@ -60,7 +60,7 @@ const TAIL = ['thanked', 'gone', 'thanked', 'gone']
 function turkey() {
   const feathers = TAIL.map(
     (colour, i) =>
-      `<g transform="rotate(${-75 + 30 * i} 44 50)"><ellipse class="feather ${colour}" cx="44" cy="27" rx="4.5" ry="12.5"/></g>`,
+      `<g transform="rotate(${-90 + 30 * i} 44 50)"><ellipse class="feather ${colour}" cx="44" cy="27" rx="4.5" ry="12.5"/></g>`,
   ).join('')
   const bird = h('div', { class: 'turkey' })
   bird.innerHTML = `<svg viewBox="0 0 104 76" width="104" height="76" aria-hidden="true">
