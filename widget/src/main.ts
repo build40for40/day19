@@ -38,6 +38,8 @@ let problem = ''
 let draft = ''
 let spoken = false
 let listener: Recording | undefined
+// Set once the chat app has said no to the microphone. The Speak button then gives way to a nudge to say it to the assistant.
+let micRefused = false
 
 const firstName = (contact: Contact) => contact.name.split(' ')[0] ?? contact.name
 const initials = (contact: Contact) =>
@@ -221,7 +223,12 @@ function gratitude(contact: Contact) {
         idle(failure instanceof Error ? failure.message : "Couldn't turn that into words. Try again or type it.")
       }
     })
-    if (typeof started === 'string') return idle(started)
+    if ('problem' in started) {
+      if (!started.refused) return idle(started.problem)
+      micRefused = true
+      listener = undefined
+      return render()
+    }
     listener = started
     mic.textContent = 'Stop'
     mic.classList.add('listening')
@@ -248,7 +255,11 @@ function gratitude(contact: Contact) {
     {},
     h('label', { for: 'gratitude' }, `What are you grateful to ${firstName(contact)} for? Type it or say it.`),
     box,
-    tools.transcribe ? h('div', { class: 'voice' }, mic, status) : false,
+    micRefused
+      ? h('p', { class: 'hint' }, `This chat app won't let the widget use the mic. To say it out loud, tell the assistant: "keep ${firstName(contact)}, because…"`)
+      : tools.transcribe
+        ? h('div', { class: 'voice' }, mic, status)
+        : false,
     error,
     h(
       'div',
@@ -339,5 +350,11 @@ if (fake) {
   void app.connect().then(() => {
     const context = app.getHostContext()
     if (context) styleFromHost(context)
+    // Some chat apps say up front which permissions the widget got. Phones don't, so there the button finds out when pressed.
+    const granted = app.getHostCapabilities()?.sandbox?.permissions
+    if (granted && !granted.microphone) {
+      micRefused = true
+      render()
+    }
   })
 }

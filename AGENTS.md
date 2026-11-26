@@ -48,7 +48,7 @@ Two extra tools sit outside the contract: `read_brain` (the Brain as markdown) a
 ### Two ways to speak the gratitude
 
 - **Talking to the assistant**: the person says "keep her, she told me my writing was worth reading" and the assistant calls `keep_contact` with their words and `spoken: true`. The server instructions tell it never to write the gratitude itself. This works wherever the chat app has voice.
-- **The Speak button** in the widget records up to 30 seconds from the microphone and sends the clip to `transcribe`, which runs Cloudflare's Whisper model (Workers AI) and returns the words for the same box. The browser's own speech to text isn't used: in the Claude desktop app it errors, because there's no speech service behind it. The button needs the chat app to give the widget the microphone, and says why when it can't. The audio isn't stored.
+- **The Speak button** in the widget records up to 30 seconds from the microphone and sends the clip to `transcribe`, which runs Cloudflare's Whisper model (Workers AI) and returns the words for the same box. The browser's own speech to text isn't used: in the Claude desktop app it errors, because there's no speech service behind it. The widget posts the clip straight to the Worker's `/transcribe` address (allowed through `csp.connectDomains`), and only falls back to the `transcribe` tool call when the chat app blocks that, with a 25 second limit either way. The button needs the chat app to give the widget the microphone. Where it won't, the button is replaced by a line telling the person to say it to the assistant. The audio isn't stored.
 
 ### What MCP and MCP Apps need, and where it's met
 

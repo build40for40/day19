@@ -5,12 +5,15 @@ import { createMcpHandler } from 'agents/mcp/server'
 import widgetHtml from '../../dist/widget.html'
 import type { Outcome } from '../brain'
 import { TOOL, type Batch, type Decided } from '../contract'
-import { DEMO_USER, MCP_PATH, type Env } from '../env'
+import { DEMO_USER, MCP_PATH, TRANSCRIBE_PATH, type Env } from '../env'
+import { hear } from '../hear'
 import * as schema from './schemas'
 import { BRAIN_TOOL, batchText, decidedText, progressText, RESET_TOOL, SERVER_INSTRUCTIONS, SERVER_NAME, TEXT } from './text'
 
 // Chat apps cache the widget by its address, so the address changes whenever the built widget does.
 const WIDGET_URI = `ui://day19/contacts-${[...widgetHtml].reduce((hash, char) => (Math.imul(hash, 31) + char.charCodeAt(0)) >>> 0, 7).toString(36)}.html`
+
+const API_PLACEHOLDER = '__DAY19_TRANSCRIBE_URL__'
 
 const text = (value: string) => [{ type: 'text' as const, text: value }]
 
@@ -24,7 +27,7 @@ const decidedResult = (result: Outcome<Decided>) =>
     : { content: text(result.error), isError: true }
 
 /** A fresh server per request. All state lives in the person's Brain. */
-export function createServer(env: Env, user: string): McpServer {
+export function createServer(env: Env, user: string, origin: string): McpServer {
   const brain = env.BRAINS.get(env.BRAINS.idFromName(user))
   const server = new McpServer({ name: SERVER_NAME, version: '0.2.0' }, { instructions: SERVER_INSTRUCTIONS })
 
@@ -105,15 +108,8 @@ export function createServer(env: Env, user: string): McpServer {
       _meta: { ui: { visibility: ['app'] } },
     },
     async ({ audio }) => {
-      try {
-        const { text: said } = await env.AI.run('@cf/openai/whisper-large-v3-turbo', { audio, task: 'transcribe', vad_filter: true })
-        const heard = (said ?? '').trim()
-        if (!heard) return { content: text("Didn't catch any words. Try again or type it."), isError: true }
-        return { content: text(heard), structuredContent: { text: heard } }
-      } catch (error) {
-        console.error('Transcription failed:', error instanceof Error ? error.name : 'unknown')
-        return { content: text("Couldn't turn that into words. Try again or type it."), isError: true }
-      }
+      const result = await hear(env, audio)
+      return result.ok ? { content: text(result.value.text), structuredContent: { ...result.value } } : { content: text(result.error), isError: true }
     },
   )
 
@@ -140,11 +136,12 @@ export function createServer(env: Env, user: string): McpServer {
       {
         uri: WIDGET_URI,
         mimeType: RESOURCE_MIME_TYPE,
-        text: widgetHtml,
+        // The widget is told where to send voice clips, and the chat app is asked to let it.
+        text: widgetHtml.replace(API_PLACEHOLDER, `${origin}${TRANSCRIBE_PATH}`),
         _meta: {
           ui: {
             // Contact photos come from Google's image host. Nothing else loads from outside the widget.
-            csp: { resourceDomains: ['https://lh3.googleusercontent.com'] },
+            csp: { resourceDomains: ['https://lh3.googleusercontent.com'], connectDomains: [origin] },
             // The mic is for speaking the gratitude. Hosts may refuse it, and the widget falls back to typing.
             permissions: { microphone: {} },
             prefersBorder: false,
@@ -158,7 +155,7 @@ export function createServer(env: Env, user: string): McpServer {
 }
 
 export function handleMcp(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-  const handler = createMcpHandler(() => createServer(env, DEMO_USER), {
+  const handler = createMcpHandler(() => createServer(env, DEMO_USER, new URL(request.url).origin), {
     route: MCP_PATH,
     onerror: (error) => console.error('MCP request failed:', error.name),
   })

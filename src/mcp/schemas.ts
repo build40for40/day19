@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import { BATCH_SIZE, MAX_GRATITUDE, type Batch, type Contact, type Decided, type Heard, type Progress } from '../contract'
+import { MAX_AUDIO_CHARS } from '../hear'
 import { TEXT } from './text'
 
 // The contract in src/contract.ts as schemas, so every tool advertises its input and output shape.
@@ -32,9 +33,8 @@ export const keepInput = z.object({
 
 export const letGoInput = z.object({ id: z.string().describe(TEXT.letGo.id) })
 
-// About 1.5MB of audio, far more than 30 seconds of speech needs.
 export const transcribeInput = z.object({
-  audio: z.string().min(1).max(2_000_000).describe(TEXT.transcribe.audio),
+  audio: z.string().min(1).max(MAX_AUDIO_CHARS).describe(TEXT.transcribe.audio),
   mimeType: z.string().max(100).optional().describe(TEXT.transcribe.mimeType),
 })
 

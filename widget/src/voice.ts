@@ -2,6 +2,12 @@ import { MAX_SPEAK_SECONDS } from '../../src/contract'
 
 const INSTEAD = 'Type it, or just say it to the assistant out loud.'
 
+/** Why recording couldn't start. `refused` means the chat app won't give the widget a mic at all, so asking again is pointless. */
+export interface NoMic {
+  problem: string
+  refused: boolean
+}
+
 export interface Recording {
   /** Stops recording. The words arrive through `onDone`. */
   stop(): void
@@ -25,18 +31,17 @@ const base64 = async (blob: Blob) => {
  * apps that give the widget a mic often have no speech service behind it, so the server turns the clip into words.
  * Resolves to why it couldn't start, or to the recording.
  */
-export async function record(onDone: (clip: Clip | undefined, problem?: string) => void): Promise<Recording | string> {
+export async function record(onDone: (clip: Clip | undefined, problem?: string) => void): Promise<Recording | NoMic> {
   if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
-    return `This chat app doesn't give the widget a mic (no recorder). ${INSTEAD}`
+    return { problem: `This chat app doesn't give the widget a mic (no recorder). ${INSTEAD}`, refused: true }
   }
   let stream: MediaStream
   try {
     stream = await navigator.mediaDevices.getUserMedia({ audio: true })
   } catch (error) {
     const name = error instanceof Error ? error.name : 'unknown'
-    return name === 'NotFoundError'
-      ? `No microphone found (${name}). ${INSTEAD}`
-      : `This chat app hasn't given the widget the mic (${name}). ${INSTEAD}`
+    if (name === 'NotFoundError') return { problem: `No microphone found (${name}). ${INSTEAD}`, refused: false }
+    return { problem: `This chat app hasn't given the widget the mic (${name}). ${INSTEAD}`, refused: true }
   }
   const mimeType = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'].find((type) => MediaRecorder.isTypeSupported(type))
   const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined)
