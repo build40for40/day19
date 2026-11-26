@@ -11,6 +11,8 @@
 <link rel="icon" href="favicon.ico" sizes="32x32">
 <link rel="icon" type="image/svg+xml" href="turkey.svg">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preload" as="image" href="images/gobbler-clay.webp">
+<script src="personality.js" defer></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Gabarito:wght@700;900&family=Oleo+Script:wght@700&display=swap" rel="stylesheet">
@@ -122,9 +124,11 @@ body{margin:0}
 .foot{flex-direction:column;align-items:flex-start;font-size:15px}
 }
 </style>
+<link rel="stylesheet" href="personality.css">
 </head>
 <body>
 <div class="pg">
+<a class="skip-link" href="#main">Skip to content</a>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
 <symbol id="turkey" viewBox="1 -3 82 82">
@@ -156,15 +160,31 @@ body{margin:0}
 </div>
 </header>
 
-<main>
+<main id="main">
 <section class="ox hero">
 <div class="w">
 <h1 class="mark">Gobbler<svg class="bite" aria-hidden="true" viewBox="-10 -10 220 220"><circle cx="100" cy="100" r="66"></circle><circle cx="162" cy="100" r="44"></circle><circle cx="132.9" cy="152.6" r="40"></circle><circle cx="70.9" cy="154.7" r="46"></circle><circle cx="38" cy="97.8" r="40"></circle><circle cx="67.1" cy="47.4" r="45"></circle><circle cx="129.1" cy="45.3" r="41"></circle></svg></h1>
 <div class="g hg">
+<div class="hero-message">
+<p class="eyebrow">A little gratitude. A lot overdue.</p>
 <p class="h M tag"><span>Some people</span><span>made your life better.</span><span>Tell them.</span></p>
 <div class="act">
 <a class="btn" href="#claude">Add to Claude</a>
 <a class="btn line" href="#chatgpt">Add to ChatGPT</a>
+</div>
+<p class="hero-fine">Five people. A few kind words. Every day.</p>
+</div>
+<div class="hero-art" aria-label="A handmade clay turkey delivering a bundle of thank-you letters">
+<div class="art-halo" aria-hidden="true"></div>
+<div class="art-orbit" aria-hidden="true"></div>
+<div class="art-scene">
+<span class="floating-note note-one" aria-hidden="true">you believed<br>in me.</span>
+<img class="clay-turkey" src="images/gobbler-clay.webp" width="960" height="960" alt="" fetchpriority="high">
+<span class="floating-note note-two" aria-hidden="true">still grateful.<span class="note-heart">♥</span></span>
+<span class="art-spark spark-one" aria-hidden="true">✳</span>
+<span class="art-spark spark-two" aria-hidden="true">✳</span>
+</div>
+<p class="art-caption">Good people deserve a little fan mail.</p>
 </div>
 </div>
 </div>
@@ -172,6 +192,7 @@ body{margin:0}
 
 <section class="tm game" id="how" aria-labelledby="gob-game">
 <div class="w">
+<div class="section-kicker"><span>A small daily helping</span><span aria-hidden="true">Made with feeling ✳</span></div>
 <h2 class="h big" id="gob-game"><span>Five people a day.</span><span>Say thanks.</span></h2>
 <div class="g stage">
 <div class="gl">
@@ -190,6 +211,7 @@ body{margin:0}
 </div>
 </div>
 <div class="deck">
+<span class="paper-tab" aria-hidden="true">A familiar face. A little thank you.</span>
 <figure class="card shot"><img src="widget-keep.png" width="1332" height="1263" alt="Gobbler in a chat, on contact 2 of 5. Beth Harper, Year 9 English teacher. What are you grateful to Beth for? She told me my writing was worth reading. Buttons: Back, Keep Beth."></figure>
 </div>
 </div>
@@ -199,10 +221,12 @@ body{margin:0}
 <section class="safe" aria-labelledby="gob-safe">
 <div class="w g sg">
 <div class="sl">
+<p class="eyebrow">Don’t leave the good stuff unsaid.</p>
 <h2 class="h M" id="gob-safe"><span>Then</span><span>tell them.</span></h2>
 <p class="lede">Gobbler writes a short thank-you note from your words. You read it, change anything you like, and send it.</p>
 <p class="lede">Nothing goes out until you say so.</p>
 <p class="lede">Someone no longer sparks joy? Thank them for their time, and let them go.</p>
+<div class="gratitude-note" aria-hidden="true"><span class="note-to">A note worth keeping</span><p>That thing you said?<br>It stayed with me.</p><span class="note-signoff">A little thanks goes a long way. <span>♥</span></span></div>
 </div>
 <figure class="done"><img src="widget-done.png" width="1332" height="1805" alt="Gobbler done for today. That’s your five, well gobbled: 3 thanked, 2 let go, with what you’re grateful to Abi, Beth and Dee for."></figure>
 </div>
@@ -210,6 +234,7 @@ body{margin:0}
 
 <section class="ox close" id="install" aria-labelledby="gob-install">
 <div class="w">
+<div class="closing-signoff"><img src="images/gobbler-clay.webp" width="960" height="960" alt="" loading="lazy"><span>Go on.<br>Make someone’s day.</span></div>
 <h2 class="h" id="gob-install">Who do you owe a thank you?</h2>
 <div class="g ways">
 <div class="way" id="claude">
