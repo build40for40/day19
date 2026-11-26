@@ -62,12 +62,12 @@ function buzz(pattern: number | number[]) {
 function turkey(kinds: Array<Outcome['kind'] | undefined>) {
   // Opened after the day was done, there's nobody to count, but a turkey without its tail is just a bird.
   const tail = kinds.length ? kinds : Array<'plain'>(BATCH_SIZE).fill('plain')
-  const spread = tail.length > 1 ? 130 / (tail.length - 1) : 0
+  const spread = tail.length > 1 ? 100 / (tail.length - 1) : 0
   const feathers = tail
     .map((kind, i) => {
-      const angle = tail.length > 1 ? -65 + spread * i : 0
+      const angle = tail.length > 1 ? -80 + spread * i : 0
       const colour = kind === 'plain' ? 'plain' : kind === 'kept' ? 'thanked' : 'gone'
-      return `<g transform="rotate(${angle.toFixed(1)} 44 50)"><ellipse class="feather ${colour}" style="animation-delay:${150 + i * 110}ms" cx="44" cy="20" rx="6.5" ry="17"/></g>`
+      return `<g transform="rotate(${angle.toFixed(1)} 44 50)"><ellipse class="feather ${colour}" style="animation-delay:${150 + i * 110}ms" cx="44" cy="29" rx="4.5" ry="10"/></g>`
     })
     .join('')
   const bird = h('div', { class: 'turkey' })
