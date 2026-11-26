@@ -11,7 +11,7 @@ import { OAuthError, OAuthProvider } from '@cloudflare/workers-oauth-provider'
 import { env } from 'cloudflare:workers'
 
 import { authHandler } from './auth'
-import { DEMO_MCP_PATH, MCP_PATH } from './env'
+import { DEMO_MCP_PATH, MCP_PATH, OAUTH_SCOPE } from './env'
 import { GoogleRevokedError, refreshAccessToken, type GoogleProps } from './google'
 import { redirectToHome } from './hosts'
 import { handleMcp } from './mcp/server'
@@ -38,7 +38,7 @@ const provider = new OAuthProvider<Env>({
   authorizeEndpoint: '/authorize',
   tokenEndpoint: '/oauth/token',
   clientRegistrationEndpoint: '/oauth/register',
-  scopesSupported: ['contacts'],
+  scopesSupported: [OAUTH_SCOPE],
   resourceMetadata: { resource: env.MCP_RESOURCE },
 
   // Keeps the Google token inside the grant fresh. Our access token lives exactly as long

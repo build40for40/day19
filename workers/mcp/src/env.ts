@@ -6,3 +6,6 @@ export const DEMO_MCP_PATH = '/demo/mcp'
 
 /** The one shared Brain behind the demo endpoint. Signed-in people get a Brain named after their Google id. */
 export const DEMO_USER = 'demo'
+
+/** The one scope our OAuth server grants. It stands for the Google contacts access behind it. */
+export const OAUTH_SCOPE = 'contacts'
