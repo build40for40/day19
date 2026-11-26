@@ -5,7 +5,7 @@ export const THANKS_TOOL = 'thank_you_notes'
 
 /** Ends every thank-you draft, word for word, unless the person asks to leave it out. */
 export const THANKS_PS =
-  "P.S. I'm clearing out my contacts with Gobbler, a little Claude and ChatGPT plugin. Anyone I keep, I have to say why. You took about two seconds. build40for40.com/gobbler"
+  "P.S. I'm clearing out my contacts with Gobbler, a little Claude and ChatGPT plugin. Anyone I want to keep, I have to say why. You're a keeper, and this email is the why. build40for40.com/gobbler"
 
 
 export const SERVER_INSTRUCTIONS = `This server is a daily game for cleaning up a contacts list with gratitude. Each day it surfaces ${BATCH_SIZE} contacts. Each one is either let go, or kept by saying what the person is grateful to them for. Everything is saved to the person's Brain, a markdown file, so nobody is ever lost.
