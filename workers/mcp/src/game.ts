@@ -7,8 +7,10 @@ export type Decision = { kind: 'kept'; gratitude: string; at: string } | { kind:
 export interface BrainEntry {
   contact: Contact
   decision: Decision
-  /** When a thank-you draft was last handed out for this contact, so the next round only drafts the new ones. */
+  /** When a thank-you draft was last made or handed out for this contact, so nobody gets drafted twice. */
   drafted?: string
+  /** The Gmail draft Gobbler saved itself when this contact was kept. */
+  draftId?: string
 }
 
 export interface GameState {

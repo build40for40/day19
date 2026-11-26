@@ -28,11 +28,20 @@ export interface Batch {
   doneForToday: boolean
 }
 
+/**
+ * What happened to the thank-you draft when someone was kept, signed in only:
+ * saved in their Gmail drafts, skipped for want of an email address, waiting on the person to
+ * sign in again with Gmail drafts allowed, or failed.
+ */
+export type DraftStatus = 'saved' | 'no_email' | 'needs_permission' | 'failed'
+
 /** What `keep_contact` and `let_go_contact` return. */
 export interface Decided {
   id: string
   decision: 'kept' | 'let_go'
   progress: Progress
+  /** Keeps only, signed in only. Missing in the demo. */
+  draft?: DraftStatus
 }
 
 export const TOOL = {

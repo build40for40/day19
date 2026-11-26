@@ -13,7 +13,10 @@ import { DurableObject } from 'cloudflare:workers'
 import { DEMO_CONTACTS, type ContactSource } from './contacts'
 import type { Batch, Contact, Decided, Progress } from './contract'
 import { Game, GameError, type GameState, type Pick, type StateStore, type ThankYou } from './game'
+import type { DraftStatus } from './contract'
+import { createDraft, GmailScopeMissingError } from './gmail'
 import { deleteContact, getPeople, listConnections, SyncTokenExpiredError } from './google'
+import { writeThankYou } from './thankyou'
 import { dealHand, indexContact, type IndexedContact } from './score'
 
 export type Outcome<T> = { ok: true; value: T } | { ok: false; error: string }
@@ -223,7 +226,7 @@ export class Brain extends DurableObject<Env> {
     return (await this.game(accessToken)).progress()
   }
 
-  async keep(id: string, gratitude: string, accessToken?: string): Promise<Outcome<Decided>> {
+  async keep(id: string, gratitude: string, accessToken?: string, senderName = ''): Promise<Outcome<Decided>> {
     const game = await this.game(accessToken)
     const result = await outcome(() => game.keep(id, gratitude))
     if (result.ok && this.signedIn) {
@@ -234,8 +237,37 @@ export class Brain extends DurableObject<Env> {
         new Date().toISOString(),
         id,
       )
+      if (accessToken) result.value.draft = await this.draftThankYou(id, accessToken, senderName)
     }
     return result
+  }
+
+  /**
+   * Saves a thank-you to someone just kept as a draft in the person's Gmail. Never sends it,
+   * and never fails the keep: whatever happens comes back as a DraftStatus for the widget to show.
+   */
+  private async draftThankYou(id: string, accessToken: string, senderName: string): Promise<DraftStatus> {
+    const state = await this.store.load()
+    const entry = state?.brain[id]
+    if (!state || !entry || entry.decision.kind !== 'kept') return 'failed'
+    if (entry.draftId) return 'saved'
+    const to = entry.contact.emails[0]
+    if (!to) return 'no_email'
+    try {
+      const email = await writeThankYou(this.env.ANTHROPIC_API_KEY, {
+        contactName: entry.contact.name,
+        gratitude: entry.decision.gratitude,
+        senderName,
+      })
+      entry.draftId = await createDraft(accessToken, { to, toName: entry.contact.name, subject: email.subject, body: email.body })
+      entry.drafted = new Date().toISOString()
+      await this.store.save(state)
+      return 'saved'
+    } catch (error) {
+      if (error instanceof GmailScopeMissingError) return 'needs_permission'
+      console.error('thank-you draft failed', error instanceof Error ? error.message : error)
+      return 'failed'
+    }
   }
 
   async letGo(id: string, accessToken?: string): Promise<Outcome<Decided>> {

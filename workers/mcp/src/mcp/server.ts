@@ -66,6 +66,8 @@ export function createServer(env: Env, session: Session): McpServer {
   const user = session.kind === 'google' ? session.google.userId : DEMO_USER
   // Signed-in Brains need the Google token for every call. The demo Brain needs none.
   const token = session.kind === 'google' ? session.google.accessToken : undefined
+  // Signs off the thank-you drafts saved on each keep.
+  const senderName = session.kind === 'google' ? session.google.name : ''
   const brain = env.BRAINS.get(env.BRAINS.idFromName(user))
   const site = new URL(env.MCP_RESOURCE).origin
   // The turkey, for chat apps that show a server's own icon instead of its site's favicon.
@@ -79,9 +81,9 @@ export function createServer(env: Env, session: Session): McpServer {
   )
   const meta = toolMeta(session)
 
-  /** When a decision finishes today's contacts, tells the assistant to draft the thank-yous. */
+  /** When a signed-in decision finishes today's contacts, tells the assistant the thank-you drafts are waiting in Gmail. */
   const roundCheck = async <T extends { content: { type: 'text'; text: string }[]; isError?: boolean }>(result: T): Promise<T> => {
-    if (result.isError || !(await brain.next(undefined, false, token)).doneForToday) return result
+    if (session.kind !== 'google' || result.isError || !(await brain.next(undefined, false, token)).doneForToday) return result
     return { ...result, content: [...result.content, ...text(ROUND_DONE)] }
   }
 
@@ -122,7 +124,7 @@ export function createServer(env: Env, session: Session): McpServer {
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
       _meta: meta,
     },
-    ({ id, gratitude }) => guarded(async () => roundCheck(decidedResult(await brain.keep(id, gratitude, token)))),
+    ({ id, gratitude }) => guarded(async () => roundCheck(decidedResult(await brain.keep(id, gratitude, token, senderName)))),
   )
 
   server.registerTool(

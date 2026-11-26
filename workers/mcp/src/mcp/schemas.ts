@@ -18,7 +18,12 @@ export const progress = z.object({ decided: z.number().int(), total: z.number().
 
 export const batch = z.object({ contacts: z.array(contact), progress, doneForToday: z.boolean() }) satisfies z.ZodType<Batch>
 
-export const decided = z.object({ id: z.string(), decision: z.enum(['kept', 'let_go']), progress }) satisfies z.ZodType<Decided>
+export const decided = z.object({
+  id: z.string(),
+  decision: z.enum(['kept', 'let_go']),
+  progress,
+  draft: z.enum(['saved', 'no_email', 'needs_permission', 'failed']).optional(),
+}) satisfies z.ZodType<Decided>
 
 export const nothing = z.object({})
 

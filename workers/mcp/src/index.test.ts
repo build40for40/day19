@@ -41,11 +41,13 @@ describe("worker", () => {
     expect(started.result.structuredContent.contacts).toHaveLength(5);
     expect(started.result.structuredContent.contacts[0].name).toBe("Agnes Okafor");
 
-    // Finishing the round tells the assistant to draft, and each kept contact is drafted once.
+    // In the demo nobody is signed in, so keeps save no Gmail draft and the round end doesn't push the assistant to draft.
+    // The assistant drafts on request instead, and each kept contact is drafted once.
     const five = started.result.structuredContent.contacts as { id: string }[];
     let last;
     for (const [i, c] of five.entries()) last = await json(await rpc("tools/call", { name: "keep_contact", arguments: { id: c.id, gratitude: "teaching me mah jong" } }, 10 + i));
-    expect(last.result.content.map((part: { text: string }) => part.text).join(" ")).toContain("thank_you_notes");
+    expect(last.result.structuredContent.draft).toBeUndefined();
+    expect(last.result.content.map((part: { text: string }) => part.text).join(" ")).not.toContain("Gmail drafts");
     const notes = await json(await rpc("tools/call", { name: "thank_you_notes", arguments: {} }, 20));
     expect(notes.result.structuredContent.notes).toHaveLength(5);
     expect(notes.result.content[0].text).toContain("I kept you.");

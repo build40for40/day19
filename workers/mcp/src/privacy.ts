@@ -9,8 +9,8 @@ export const privacyBody = `<h1>Privacy</h1>
 <p>This is Gobbler, built on day 19 of <a href="https://build40for40.com">40 for 40</a>: a game for your Google Contacts that you play inside Claude or ChatGPT. Each day it shows you a few contacts. You keep each one by saying what you're grateful for, or you let them go.</p>
 
 <h2>What we read</h2>
-<p>When you sign in with Google, you let us see and edit your Google Contacts. We read each contact's name, email addresses, phone numbers, photo, organisation, labels, birthday and notes, plus your own name and email address so we know whose contacts these are.</p>
-<p>We don't read your email, your calendar or anything else in your Google account.</p>
+<p>When you sign in with Google, you let us see and edit your Google Contacts, and save drafts in your Gmail. We read each contact's name, email addresses, phone numbers, photo, organisation, labels, birthday and notes, plus your own name and email address so we know whose contacts these are.</p>
+<p>We don't read your email, your calendar or anything else in your Google account. The Gmail permission lets us create drafts. We never use it to read, send or delete your mail.</p>
 
 <h2>What we store</h2>
 <ul>
@@ -22,14 +22,17 @@ export const privacyBody = `<h1>Privacy</h1>
 
 <h2>What we change</h2>
 <p>When you let someone go, we delete them from your Google Contacts. That also removes them from any phone synced to that Google account. Nothing is deleted unless you choose it for that person.</p>
-<p>When you keep someone, they stay in your Google Contacts exactly as they are.</p>
+<p>When you keep someone, they stay in your Google Contacts exactly as they are, and we save a short thank-you email to them in your Gmail drafts. It sits there until you decide. We never send it.</p>
+
+<h2>Writing the thank-you</h2>
+<p>To turn your note into a couple of proper sentences, we send the contact's first name and what you wrote about them to Anthropic's Claude API, which writes the sentences and doesn't use them to train its models. If that doesn't work, the draft uses your words as you wrote them.</p>
 
 <h2>What the assistant sees</h2>
 <p>The contacts you play with, and the gratitude you write, are shown to the assistant you play in (Claude or ChatGPT) so it can show the game and talk about it with you. What happens to your chats there is covered by that assistant's own privacy policy.</p>
 
 <h2>What we never do</h2>
 <ul>
-<li>Send anything to your contacts. Saying thanks is the point, sending it is up to you.</li>
+<li>Send anything to your contacts. Thank-yous wait in your drafts, and sending them is up to you.</li>
 <li>Sell your data, share it with anyone else, or use it for ads.</li>
 <li>Use your data to train AI models.</li>
 </ul>

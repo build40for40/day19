@@ -1,6 +1,6 @@
 import { App, applyDocumentTheme, applyHostFonts, applyHostStyleVariables, type McpUiHostContext } from '@modelcontextprotocol/ext-apps'
 
-import { BATCH_SIZE, MAX_GRATITUDE, MIN_GRATITUDE, type Batch, type Contact, type Progress } from '../../src/contract'
+import { BATCH_SIZE, MAX_GRATITUDE, MIN_GRATITUDE, type Batch, type Contact, type DraftStatus, type Progress } from '../../src/contract'
 import './style.css'
 import { fakeTools, mcpTools, type Tools } from './tools'
 
@@ -19,7 +19,18 @@ function h<K extends keyof HTMLElementTagNameMap>(tag: K, props: Props = {}, ...
   return el
 }
 
-type Outcome = { kind: 'kept'; gratitude: string } | { kind: 'let_go' } | { kind: 'elsewhere' }
+type Outcome = { kind: 'kept'; gratitude: string; draft?: DraftStatus } | { kind: 'let_go' } | { kind: 'elsewhere' }
+
+/** Where Open Gmail drafts goes. Gobbler saves a draft there on every keep when signed in. */
+const GMAIL_DRAFTS_URL = 'https://mail.google.com/mail/u/0/#drafts'
+
+/** What each kept card says about its thank-you draft. */
+const DRAFT_NOTE: Record<DraftStatus, string> = {
+  saved: '✓ Thank-you saved in your Gmail drafts',
+  no_email: 'No email address, so no draft',
+  needs_permission: 'No draft: reconnect Gobbler and allow Gmail drafts',
+  failed: "The draft didn't save this time",
+}
 
 // `?fake=1`, or opening the page on its own in a browser tab, plays the game on made-up contacts with no server.
 const fake = new URLSearchParams(location.search).has('fake') || window.parent === window
@@ -148,7 +159,7 @@ async function catchUp() {
   progress = latest
 }
 
-async function decide(contact: Contact, run: () => Promise<{ progress: Progress }>, outcome: Outcome, said: string) {
+async function decide(contact: Contact, run: () => Promise<{ progress: Progress; draft?: DraftStatus }>, outcome: Outcome, said: string) {
   if (busy) return
   busy = true
   problem = ''
@@ -156,8 +167,9 @@ async function decide(contact: Contact, run: () => Promise<{ progress: Progress 
   // A let go still waiting on its undo goes first, so the server hears things in the order they happened.
   await commitLetGo()
   try {
-    progress = (await run()).progress
-    outcomes.set(contact.id, outcome)
+    const result = await run()
+    progress = result.progress
+    outcomes.set(contact.id, outcome.kind === 'kept' && result.draft ? { ...outcome, draft: result.draft } : outcome)
     justDecided = contact.id
     buzz(12)
     reset()
@@ -398,7 +410,23 @@ function done(contacts: Contact[]) {
   const left = progress ? Math.max(progress.total - progress.decided, 0) : 0
   const thanks = kept.map((contact) => {
     const outcome = outcomes.get(contact.id)
-    return h('figure', { class: 'thanks' }, h('blockquote', {}, outcome?.kind === 'kept' ? outcome.gratitude : ''), h('figcaption', {}, contact.name))
+    const draft = outcome?.kind === 'kept' ? outcome.draft : undefined
+    return h(
+      'figure',
+      { class: 'thanks' },
+      h('blockquote', {}, outcome?.kind === 'kept' ? outcome.gratitude : ''),
+      h('figcaption', {}, contact.name),
+      draft && h('p', { class: `draft draft-${draft}` }, DRAFT_NOTE[draft]),
+    )
+  })
+  const drafts = kept.filter((contact) => {
+    const outcome = outcomes.get(contact.id)
+    return outcome?.kind === 'kept' && outcome.draft === 'saved'
+  }).length
+  // Signed in, every keep already saved its own draft. In the demo nothing did, so offer to have the assistant write them.
+  const signedIn = kept.some((contact) => {
+    const outcome = outcomes.get(contact.id)
+    return outcome?.kind === 'kept' && outcome.draft !== undefined
   })
   return h(
     'div',
@@ -406,6 +434,7 @@ function done(contacts: Contact[]) {
     turkey(),
     h('p', { class: 'done-title' }, contacts.length ? `That's your ${contacts.length === BATCH_SIZE ? 'five' : 'lot'}. Well gobbled.` : "That's today done"),
     h('p', { class: 'done-body' }, contacts.length ? `${kept.length} thanked, ${letGo.length} let go.` : left > 0 ? 'More tomorrow, or go again now.' : 'Your list is clean.'),
+    drafts > 0 && h('p', { class: 'done-drafts' }, `${drafts === 1 ? 'One thank-you is' : `${drafts} thank-yous are`} waiting in your Gmail drafts. Nothing gets sent until you send it.`),
     ...thanks,
     letGo.length > 0 && h('p', { class: 'gone' }, `Let go: ${names(letGo)}`),
     elsewhere.length > 0 && h('p', { class: 'gone' }, `Sorted in the chat: ${names(elsewhere)}`),
@@ -421,16 +450,18 @@ function done(contacts: Contact[]) {
             { click: () => void app.sendMessage({ role: 'user', content: [{ type: 'text', text: 'Show me my Brain.' }] }).catch(() => {}) },
             'Read my Brain',
           ),
+        !fake && drafts > 0 && h('button', { click: () => void app.openLink({ url: GMAIL_DRAFTS_URL }).catch(() => {}) }, 'Open Gmail drafts'),
+        !fake && !signedIn && kept.length > 0 && h('button', { click: () => askForDrafts() }, 'Draft thank-yous'),
         // Five a day is the habit, not a wall: anyone on a roll can go again.
         left > 0 && h('button', { class: 'primary grow', 'aria-busy': String(busy), click: () => void goAgain() }, left >= BATCH_SIZE ? 'Five more' : `The last ${left}`),
       ),
   )
 }
 
-/** Once a round ends with someone kept, asks the assistant (as the person) to draft their thank-yous in Gmail. Drafts are never sent. */
+/** Demo only, from its button: asks the assistant to write the thank-yous, since nobody is signed in to save them. Signed in, each keep saves its own draft. */
 function askForDrafts() {
   if (fake || !batch?.some((contact) => outcomes.get(contact.id)?.kind === 'kept')) return
-  const text = "That's my five done. Draft thank-you emails for the people I just kept and save them in my Gmail drafts."
+  const text = 'Draft thank-you emails for the people I just kept and save them in my Gmail drafts.'
   void app.sendMessage({ role: 'user', content: [{ type: 'text', text }] }).catch(() => {})
 }
 
@@ -476,7 +507,6 @@ function render() {
     shown = 'done'
     if (fresh) {
       buzz([14, 70, 14, 70, 30])
-      askForDrafts()
     }
     const card = done(batch)
     card.classList.toggle('deal', fresh)
