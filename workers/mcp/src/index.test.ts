@@ -37,6 +37,17 @@ describe("worker", () => {
     expect(names).not.toContain("list_contacts");
     for (const tool of tools.result.tools) expect(tool._meta.securitySchemes).toEqual([{ type: "noauth" }]);
 
+    // The widget is listed once, at the address start_game names, and an earlier build's address still gets it.
+    const widgetUri = tools.result.tools.find((tool: { name: string }) => tool.name === "start_game")._meta.ui.resourceUri;
+    const listed = await json(await rpc("resources/list", {}, 3));
+    expect(listed.result.resources.map((resource: { uri: string }) => resource.uri)).toEqual([widgetUri]);
+    const current = await json(await rpc("resources/read", { uri: widgetUri }, 4));
+    const earlier = await json(await rpc("resources/read", { uri: "ui://gobbler/contacts-earlier.html" }, 5));
+    expect(earlier.result.contents[0].uri).toBe("ui://gobbler/contacts-earlier.html");
+    expect(earlier.result.contents[0].mimeType).toBe("text/html;profile=mcp-app");
+    expect(earlier.result.contents[0].text).toBe(current.result.contents[0].text);
+    expect((await json(await rpc("resources/read", { uri: "ui://gobbler/something-else.html" }, 6))).error).toBeDefined();
+
     const started = await json(await rpc("tools/call", { name: "reset_demo", arguments: {} }, 2));
     expect(started.result.structuredContent.contacts).toHaveLength(5);
     expect(started.result.structuredContent.contacts[0].name).toBe("Agnes Okafor");
