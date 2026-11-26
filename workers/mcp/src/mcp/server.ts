@@ -81,7 +81,7 @@ export function createServer(env: Env, session: Session): McpServer {
       annotations: { readOnlyHint: true, openWorldHint: false },
       _meta: { ...meta, ui: { resourceUri: WIDGET_URI } },
     },
-    () => guarded(async () => batchResult(await brain.next(undefined, token))),
+    () => guarded(async () => batchResult(await brain.next(undefined, false, token))),
   )
 
   server.registerTool(
@@ -94,7 +94,7 @@ export function createServer(env: Env, session: Session): McpServer {
       annotations: { readOnlyHint: true, openWorldHint: false },
       _meta: meta,
     },
-    ({ limit }) => guarded(async () => batchResult(await brain.next(limit, token))),
+    ({ limit, more }) => guarded(async () => batchResult(await brain.next(limit, more ?? false, token))),
   )
 
   server.registerTool(

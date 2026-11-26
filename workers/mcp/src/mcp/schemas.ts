@@ -22,7 +22,10 @@ export const decided = z.object({ id: z.string(), decision: z.enum(['kept', 'let
 
 export const nothing = z.object({})
 
-export const nextInput = z.object({ limit: z.number().int().min(1).max(BATCH_SIZE).optional().describe(TEXT.next.limit) })
+export const nextInput = z.object({
+  limit: z.number().int().min(1).max(BATCH_SIZE).optional().describe(TEXT.next.limit),
+  more: z.boolean().optional().describe(TEXT.next.more),
+})
 
 export const keepInput = z.object({
   id: z.string().describe(TEXT.keep.id),

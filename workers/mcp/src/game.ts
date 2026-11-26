@@ -12,7 +12,7 @@ export interface BrainEntry {
 export interface GameState {
   /** The UK date today's contacts were picked for, as YYYY-MM-DD. */
   date?: string
-  /** Today's contacts, picked once a day. */
+  /** Today's contacts: five picked at the start of the day, topped up if it started short, plus any extra rounds asked for. */
   today: Contact[]
   brain: Record<string, BrainEntry>
 }
@@ -44,11 +44,22 @@ export class Game {
   private async state(): Promise<GameState> {
     const state = (await this.store.load()) ?? { today: [], brain: {} }
     const date = ukDate(this.now())
-    if (state.date === date) return state
+    // A hand that started short (a new account, or contacts added during the day) is filled back up to five.
+    if (state.date === date) return state.today.length < BATCH_SIZE ? this.deal(state, BATCH_SIZE - state.today.length) : state
     // A new day: the next five nobody has decided on yet, picked by `pick` (A to Z unless told otherwise).
     const undecided = (await this.source.list()).filter((contact) => !state.brain[contact.id])
     const today = this.pick(undecided).slice(0, BATCH_SIZE)
     const next = { ...state, date, today }
+    await this.store.save(next)
+    return next
+  }
+
+  /** Adds up to `count` more undecided contacts to today's hand. Everyone already in it stays, decided or not. */
+  private async deal(state: GameState, count: number): Promise<GameState> {
+    const inHand = new Set(state.today.map((contact) => contact.id))
+    const spare = (await this.source.list()).filter((contact) => !state.brain[contact.id] && !inHand.has(contact.id))
+    if (!spare.length) return state
+    const next = { ...state, today: [...state.today, ...this.pick(spare).slice(0, count)] }
     await this.store.save(next)
     return next
   }
@@ -58,9 +69,15 @@ export class Game {
     return { decided: Object.keys(state.brain).length, total: ids.size }
   }
 
-  async next(limit = BATCH_SIZE): Promise<Batch> {
-    const state = await this.state()
-    const waiting = state.today.filter((contact) => !state.brain[contact.id])
+  /**
+   * What's left of today's hand. With `more`, and only once today's hand is all decided, five more are dealt:
+   * the day's five is a habit, not a wall, so someone on a roll can go again as often as they like.
+   */
+  async next(limit = BATCH_SIZE, more = false): Promise<Batch> {
+    let state = await this.state()
+    const left = (from: GameState) => from.today.filter((contact) => !from.brain[contact.id])
+    if (more && left(state).length === 0) state = await this.deal(state, BATCH_SIZE)
+    const waiting = left(state)
     return { contacts: waiting.slice(0, limit), progress: await this.count(state), doneForToday: waiting.length === 0 }
   }
 
@@ -70,7 +87,7 @@ export class Game {
 
   private waiting(state: GameState, id: string): Contact {
     const contact = state.today.find((c) => c.id === id)
-    if (!contact) throw new GameError(`No contact with id "${id}" in today's five.`)
+    if (!contact) throw new GameError(`No contact with id "${id}" in today's contacts.`)
     if (state.brain[id]) throw new GameError(`${contact.name} has already been decided.`)
     return contact
   }
