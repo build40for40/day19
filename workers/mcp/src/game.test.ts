@@ -45,11 +45,11 @@ describe('Game', () => {
     const { game, contacts } = setup()
     const [first] = (await game.next()).contacts
     await expect(game.keep(first!.id, '  ')).rejects.toThrow(GameError)
-    const after = await game.keep(first!.id, ' She told me my  writing was worth reading ', true)
+    const after = await game.keep(first!.id, ' She told me my  writing was worth reading ')
     expect(after).toEqual({ id: first!.id, decision: 'kept', progress: { decided: 1, total: 8 } })
     expect(contacts()).toHaveLength(8)
     expect(initials((await game.next()).contacts)).toEqual(['T', 'U', 'V', 'W'])
-    expect(await game.brain()).toContain('- Grateful for: She told me my writing was worth reading (spoken)')
+    expect(await game.brain()).toContain('- Grateful for: She told me my writing was worth reading')
   })
 
   it('lets a contact go from the source but keeps a copy in the Brain, and the total stays put', async () => {

@@ -1,7 +1,7 @@
 import type { ContactSource } from './contacts'
 import { BATCH_SIZE, MAX_GRATITUDE, MIN_GRATITUDE, type Batch, type Contact, type Decided, type Progress } from './contract'
 
-export type Decision = { kind: 'kept'; gratitude: string; spoken: boolean; at: string } | { kind: 'let_go'; at: string }
+export type Decision = { kind: 'kept'; gratitude: string; at: string } | { kind: 'let_go'; at: string }
 
 /** One person in the Brain: the contact as it was, and what was decided about them. */
 export interface BrainEntry {
@@ -26,21 +26,28 @@ export class GameError extends Error {}
 
 const ukDate = (now: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/London' }).format(now)
 
+/** Picks today's contacts from everyone undecided. The game takes the first BATCH_SIZE of what it returns. */
+export type Pick = (undecided: Contact[]) => Contact[]
+
+/** The default: A to Z. Signed-in Brains swap in the hand from score.ts. */
+export const aToZ: Pick = (undecided) => undecided.toSorted((a, b) => a.name.localeCompare(b.name, 'en'))
+
 /** The rules: five contacts a day, each let go or kept with gratitude, and everything written to the Brain. */
 export class Game {
   constructor(
     private readonly source: ContactSource,
     private readonly store: StateStore,
     private readonly now: () => Date = () => new Date(),
+    private readonly pick: Pick = aToZ,
   ) {}
 
   private async state(): Promise<GameState> {
     const state = (await this.store.load()) ?? { today: [], brain: {} }
     const date = ukDate(this.now())
     if (state.date === date) return state
-    // A new day: the next five nobody has decided on yet, A to Z.
+    // A new day: the next five nobody has decided on yet, picked by `pick` (A to Z unless told otherwise).
     const undecided = (await this.source.list()).filter((contact) => !state.brain[contact.id])
-    const today = undecided.toSorted((a, b) => a.name.localeCompare(b.name, 'en')).slice(0, BATCH_SIZE)
+    const today = this.pick(undecided).slice(0, BATCH_SIZE)
     const next = { ...state, date, today }
     await this.store.save(next)
     return next
@@ -68,13 +75,13 @@ export class Game {
     return contact
   }
 
-  async keep(id: string, gratitude: string, spoken = false): Promise<Decided> {
+  async keep(id: string, gratitude: string): Promise<Decided> {
     const state = await this.state()
     const contact = this.waiting(state, id)
     const text = gratitude.trim().replace(/\s+/g, ' ')
     if (text.length < MIN_GRATITUDE) throw new GameError(`Say what you're grateful to ${contact.name} for first.`)
     if (text.length > MAX_GRATITUDE) throw new GameError(`Keep it under ${MAX_GRATITUDE} characters.`)
-    state.brain[id] = { contact, decision: { kind: 'kept', gratitude: text, spoken, at: this.now().toISOString() } }
+    state.brain[id] = { contact, decision: { kind: 'kept', gratitude: text, at: this.now().toISOString() } }
     await this.store.save(state)
     return { id, decision: 'kept', progress: await this.count(state) }
   }
@@ -103,7 +110,7 @@ export function brainMarkdown(entries: BrainEntry[]): string {
   const person = ({ contact, decision }: BrainEntry) => [
     `### ${contact.name}`,
     '',
-    ...(decision.kind === 'kept' ? [`- Grateful for: ${decision.gratitude}${decision.spoken ? ' (spoken)' : ''}`] : []),
+    ...(decision.kind === 'kept' ? [`- Grateful for: ${decision.gratitude}`] : []),
     `- ${decision.kind === 'kept' ? 'Kept' : 'Let go'} on ${day(decision.at)}`,
     ...(contact.organisation ? [`- Organisation: ${contact.organisation}`] : []),
     ...(contact.emails.length ? [`- Email: ${contact.emails.join(', ')}`] : []),

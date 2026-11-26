@@ -4,19 +4,19 @@ Day 19 of 40 for 40, built live on Twitch on Thursday 26 November 2026. The prob
 
 - **Form factor:** a Claude and ChatGPT plugin (MCP).
 - **Name:** TBC. The repo stays `day19` until the app has a name, then it's renamed and served at `build40for40.com/<app>/`.
+- **Layout:** a pnpm monorepo. `workers/mcp` is the one Worker: the MCP server, its widget, Google sign-in and each person's Brain, served at `https://day19.40for40.workers.dev` until the app has a name. The landing page goes in `apps/`. Setup and commands are in `README.md`. Paths below are inside `workers/mcp`.
+- **JavaScript and TypeScript dependencies:** pnpm, as one workspace. Run `pnpm install` from the root and `pnpm --filter @day19/mcp add <dep>` to add one. Never npm or yarn, and never a `package-lock.json`.
 
 Shared 40 for 40 context lives in `../AGENTS.md`.
 
 ## Stack
 
-- One Cloudflare Worker (`src/index.ts`) serving an MCP server at `/mcp`, built with `@modelcontextprotocol/server` and `agents/mcp/server`, like Day 15.
+- One Cloudflare Worker (`src/index.ts`) serving the MCP server, built with `@modelcontextprotocol/server` and `agents/mcp/server`, like Day 15. `/mcp` needs Google sign-in and plays on the person's own contacts. `/demo/mcp` is the same server on made-up contacts with no sign-in.
 - The widget is an MCP App (`@modelcontextprotocol/ext-apps`): `widget/` builds with Vite into one file, `dist/widget.html`, which the Worker bundles as text and serves as a `ui://day19/contacts-<hash>.html` resource (the hash changes with each build, so chat apps don't show a stale copy). It renders in Claude and ChatGPT.
 - `src/contract.ts` is the shared contract below as TypeScript types and tool names. The widget and the server both import it. `src/mcp/schemas.ts` is the same thing as zod schemas.
 - `src/game.ts` holds the rules (five a day, let go or keep with gratitude, the Brain as markdown) with no Cloudflare in it, so it tests in plain Node and also runs inside the widget's fake mode.
-- `src/brain.ts` is a Durable Object, one per person, that stores their decisions and today's five.
-- `src/contacts.ts` has the `ContactSource` interface and the made-up demo contacts.
-
-**Not built yet: Google sign-in and the People API.** Today the deployed Worker plays the game on made-up contacts, with everyone sharing one Brain (`DEMO_USER` in `src/env.ts`). To make it real, implement `ContactSource` for Google (`list` and `remove`) and give each signed-in person their own Brain. The widget, the contract and the rules don't change.
+- `src/brain.ts` is a Durable Object, one per person, that stores their decisions and today's five, and for a signed-in person their copy of Google Contacts.
+- `src/contacts.ts` has the `ContactSource` interface and the made-up demo contacts. `src/google.ts` is everything that talks to Google, and `src/score.ts` picks a signed-in person's five.
 
 ## The contract
 
@@ -28,27 +28,27 @@ A contact is `{ id, name, emails[], phones[], photoUrl, organisation }`. `photoU
 | --- | --- | --- |
 | `start_game` | none | `{ contacts[], progress, doneForToday }`, and opens the widget |
 | `next_contacts` | `{ limit? }`, 1 to 5, default 5 | `{ contacts[], progress, doneForToday }` |
-| `keep_contact` | `{ id, gratitude, spoken? }` | `{ id, decision: "kept", progress }` |
+| `keep_contact` | `{ id, gratitude }` | `{ id, decision: "kept", progress }` |
 | `let_go_contact` | `{ id }` | `{ id, decision: "let_go", progress }` |
 | `progress` | none | `{ decided, total }` |
-| `transcribe` | `{ audio, mimeType }`, audio as base64 | `{ text }`. Only the widget calls it, for the Speak button |
 
 What the widget relies on, beyond the names:
 
-- **`contacts`** are today's undecided contacts, A to Z, at most `limit`. `start_game` returns the same thing as `next_contacts` with no arguments, so the widget draws from the tool result and needs no second call.
+- **`contacts`** are today's undecided contacts, at most `limit`: A to Z in the demo, 3 oldest plus 2 likely-meaningful when signed in. `start_game` returns the same thing as `next_contacts` with no arguments, so the widget draws from the tool result and needs no second call.
 - **`progress`** comes back with every result, so the "12 of 340 decided" line never needs its own call. `total` counts everyone, including people already let go.
 - **`doneForToday`** is true once today's five are all decided. The server owns the five a day rule: it picks the five once per UK day and `next_contacts` only ever returns what's left of them.
-- **`spoken`** is optional and true when the gratitude was said out loud. It's saved with the gratitude.
 - **Errors** come back as a normal tool result with `isError: true` and one plain-English sentence as text, which the widget shows as it is ("Say what you're grateful to Bao for first."). No `structuredContent` on an error.
 - **Text for the assistant**: every result also has a `content` text version of the same data, because the assistant reads that and the widget reads `structuredContent`.
-- Deciding the same contact twice is an error. The widget then calls `next_contacts` and skips anyone already decided, which is how a contact kept by talking to the assistant drops out of the widget.
+- Deciding the same contact twice is an error. The widget then calls `next_contacts` and skips anyone already decided, which is how a contact kept by telling the assistant drops out of the widget.
 
-Two extra tools sit outside the contract: `read_brain` (the Brain as markdown) and `reset_demo` (demo only, puts the made-up contacts back).
+Extra tools sit outside the contract: `read_brain` (the Brain as markdown), `reset_demo` (demo endpoint only, puts the made-up contacts back), and `sync_contacts` and `list_contacts` (signed in only).
 
-### Two ways to speak the gratitude
+### Two ways to give the gratitude
 
-- **Talking to the assistant**: the person says "keep her, she told me my writing was worth reading" and the assistant calls `keep_contact` with their words and `spoken: true`. The server instructions tell it never to write the gratitude itself. This works wherever the chat app has voice.
-- **The Speak button** in the widget records up to 30 seconds from the microphone and sends the clip to `transcribe`, which runs Cloudflare's Whisper model (Workers AI) and returns the words for the same box. The browser's own speech to text isn't used: in the Claude desktop app it errors, because there's no speech service behind it. The widget posts the clip straight to the Worker's `/transcribe` address (allowed through `csp.connectDomains`), and only falls back to the `transcribe` tool call when the chat app blocks that, with a 25 second limit either way. The button needs the chat app to give the widget the microphone. Where it won't, the button is replaced by a line telling the person to say it to the assistant. The audio isn't stored.
+- **Typing it in the widget's box.**
+- **Telling the assistant in the chat**: the person says "keep her, she told me my writing was worth reading" and the assistant calls `keep_contact` with their words. The server instructions tell it never to write the gratitude itself.
+
+There is no voice input. The widget had a Speak button that recorded a clip and sent it to a `transcribe` tool (Cloudflare's Whisper model), and it was taken out on Day 19: the Claude desktop app wouldn't give the widget the microphone, and where it did, the clip hung on its way to the server. The `spoken` flag on `keep_contact` went with it.
 
 ### What MCP and MCP Apps need, and where it's met
 
@@ -56,18 +56,19 @@ Two extra tools sit outside the contract: `read_brain` (the Brain as markdown) a
 - **One tool opens it**: `start_game` has `_meta.ui.resourceUri` pointing at it. The other tools have no widget, so the assistant can call them without drawing a new one each time.
 - **Every tool declares `inputSchema` and `outputSchema`**, and its `structuredContent` matches the output schema.
 - **Annotations**: `readOnlyHint` on the three that only read, `destructiveHint` on `let_go_contact` so chat apps ask before the assistant deletes anyone.
-- **Permissions and CSP live on the resource**, not the tool: `permissions.microphone` for the Speak button, and `csp.resourceDomains` allowing `https://lh3.googleusercontent.com`, where Google serves contact photos. Check that host against real People API photo URLs once sign-in works.
+- **CSP lives on the resource**, not the tool: `csp.resourceDomains` allows `https://lh3.googleusercontent.com`, where Google serves contact photos. Check that host against real People API photo URLs once sign-in works.
 - **The widget talks through the `App` class** only: `ontoolresult` for the first batch, `callServerTool` for the buttons, `updateModelContext` to tell the assistant what was decided, and the host's theme and fonts.
-- **`transcribe` is hidden from the assistant** with `_meta.ui.visibility: ["app"]`.
-- **Still to do for real users**: OAuth on the MCP endpoint. It's open today, which is fine only while the contacts are made up, and it means anyone with the address can use `transcribe` on the team's Cloudflare bill (about $0.0005 a minute of audio).
+- **OAuth on `/mcp`**: done. `/demo/mcp` stays open to anyone with the address.
 
 ## Commands
 
-- `npm run dev`: builds the widget and runs the Worker at http://localhost:8799.
-- `npm run host`: a small stand-in for Claude at http://localhost:5199 that shows the widget and talks to the dev Worker. Run it alongside `npm run dev`. Rebuild with `npm run build:widget` after changing the widget.
-- `npm run widget`: the widget on its own in a browser tab, in fake mode (`?fake=1`), with made-up contacts and no server. Changes show up as you save.
-- `npm test`, `npm run typecheck`, `npm run build` (the widget build must run before typecheck and tests on a fresh clone, since the Worker imports `dist/widget.html`).
-- `npm run deploy`, and wrangler as `npm run wrangler -- <args>`, never `npx wrangler`.
+Run these from `workers/mcp` (or from the root with `pnpm --filter @day19/mcp <script>`).
+
+- `pnpm dev`: builds the widget and runs the Worker at http://localhost:8788. Google sign-in needs `.dev.vars` (see `README.md`); the demo at `/demo/mcp` doesn't.
+- `pnpm host`: a small stand-in for Claude at http://localhost:5199 that shows the widget and plays the demo against the dev Worker. Run it alongside `pnpm dev`. Rebuild with `pnpm build:widget` after changing the widget.
+- `pnpm widget`: the widget on its own in a browser tab, in fake mode (`?fake=1`), with made-up contacts and no server. Changes show up as you save.
+- `pnpm test`, `pnpm typecheck`, `pnpm build`. `test` and `build` build the widget first, since the Worker imports `dist/widget.html`.
+- `pnpm deploy`, and wrangler as `pnpm wrangler <args>`, never `npx wrangler`.
 
 ## The problem
 
@@ -89,7 +90,7 @@ Written by Samira on the day.
 - For each contact there are two options:
   1. **Delete the contact** ("let go" in the widget). It gets deleted from the Google Contacts list, but it is stored in the "Brain" (a markdown file) first.
   2. **Keep the contact.** To keep it I have to fill out a short text box saying what I'm grateful for. The contact stays in Google Contacts, and the gratitude is saved into the Brain with the contact.
-- The gratitude can be typed or spoken. Voice input fills the same box.
+- The gratitude is typed into the box, or told to the assistant in the chat. Voice input was dropped on Day 19.
 
 ## What we're building
 
@@ -102,6 +103,31 @@ A "hot or not" game for your contacts, played inside a Claude chat, as a Claude 
 - A landing page explains it and how to install it.
 
 Stretch: an archive middle option, sending the gratitude (message, email, letter), email frequency to suggest who to keep, scheduled runs, a phone app.
+
+## Sign-in, sync and the signed-in Brain
+
+- **Sign-in:** `@cloudflare/workers-oauth-provider` makes the Worker an OAuth server for Claude and ChatGPT (`/authorize`, `/oauth/token`, `/oauth/register`). Our `/authorize` page (`src/auth.ts`) asks the person to approve the app, then hands them to Google; Google returns to `/callback`. The Google tokens live in the grant's encrypted `props`, never with Claude. When Claude refreshes our token, `tokenExchangeCallback` in `src/index.ts` refreshes Google's.
+- **One Brain class, two kinds:** a signed-in person gets a Brain named after their Google id (`idFromName(sub)`); the demo endpoint uses one shared Brain (`DEMO_USER`). Both play the same `Game`. A signed-in Brain also keeps a copy of the person's Google Contacts in SQLite (tables `contacts` and `meta`), and its `ContactSource` reads from that copy and deletes from Google.
+- **Sync:** the first sync reads every contact (about 2 People API calls for 1,500). After that the stored sync token fetches only changes; when Google says it's expired, it does a full read again. Every game call syncs first if the last sync was over 5 minutes ago.
+- **Today's five, signed in:** 3 contacts edited longest ago plus the 2 highest scores from cheap signals (starred, family or friends, user labels, birthday, photo, notes, shared surname), from `src/score.ts`. The game takes a `pick` function for this; the demo and the widget's fake mode keep A to Z.
+- **Let go, signed in:** the game writes the Brain entry first, then the Google source saves a full snapshot of the contact (every field the People API has) and deletes it from Google. A contact already gone from Google counts as deleted.
+- **Two more tools when signed in:** `sync_contacts` and `list_contacts` (the whole address book from the copy, A to Z, with each status and gratitude). `reset_demo` only exists on the demo endpoint.
+- **Tests never reach Google or Cloudflare.** They run in the Workers runtime through `@cloudflare/vitest-plugin` with remote bindings off, next to their source as `*.test.ts`.
+
+## Decided
+
+- Durable Object per person for the Brain, not D1.
+- Ask Google for `contacts` (read and write) from the start, so nobody has to re-consent when deletes land.
+- Signed in, today's five are 3 oldest plus 2 likely-meaningful.
+- Let go archives a full snapshot, then really deletes.
+
+## Still open
+
+- Lawrence decided that after five a day the game nudges but allows more, and the game today stops at five (`doneForToday`) until tomorrow. Pick one.
+- Lawrence decided keep also appends a dated block to the contact's Google Notes, never overwriting. Not built yet: today the gratitude is saved in the Brain only.
+- How strict the gratitude box is (today: at least 3 characters).
+- An undo for let go, restoring from the snapshot.
+- `/demo/mcp` is open to anyone with the address.
 
 ## More from the brief and plan
 

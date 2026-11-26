@@ -1,0 +1,10 @@
+packages:
+  - apps/*
+  - packages/*
+  - workers/*
+
+allowBuilds:
+  # Its install script only prints a funding banner.
+  core-js-pure: false
+  esbuild: true
+  workerd: true
