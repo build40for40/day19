@@ -10,7 +10,8 @@
   "rules": [{ "type": "Text", "globs": ["**/*.html"], "fallthrough": true }],
 
   // The URL MCP clients connect to. Every token is bound to it, and its host serves sign-in,
-  // discovery, the landing page and /privacy. Requests to any other host redirect there (src/hosts.ts).
+  // discovery, the landing page and /privacy. build40for40.com/gobbler/ serves the same site, and
+  // sends the app's routes there (src/hosts.ts).
   // Local dev overrides it in .dev.vars with http://localhost:8788/mcp.
   "vars": {
     "MCP_RESOURCE": "https://gobbler.build40for40.com/mcp"
@@ -41,7 +42,7 @@
   "routes": [
     // The app's own host, matching MCP_RESOURCE. Deploying creates the custom domain and its DNS record.
     { "pattern": "gobbler.build40for40.com", "custom_domain": true },
-    // The site's usual build40for40.com/<app>/ address, which redirects to the subdomain.
+    // The site's usual build40for40.com/<app>/ address, which serves the same landing page.
     { "pattern": "build40for40.com/gobbler", "zone_name": "build40for40.com" },
     { "pattern": "build40for40.com/gobbler/*", "zone_name": "build40for40.com" }
   ],

@@ -1,15 +1,16 @@
 <!doctype html>
 <!-- Ben's landing page. CSS and images live next to it in landing/.
-     Keep a link to /privacy: Google's consent screen points at it. -->
+     Keep a link to /privacy: Google's consent screen points at it.
+     Links stay relative: the page is also served at build40for40.com/gobbler/. -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gobbler</title>
-<meta name="description" content="A gratitude game for your Google Contacts, played in Claude or ChatGPT.">
-<link rel="icon" href="/favicon.ico" sizes="32x32">
-<link rel="icon" type="image/svg+xml" href="/turkey.svg">
-<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="description" content="Thank the people who made your life better, right from Claude or ChatGPT.">
+<link rel="icon" href="favicon.ico" sizes="32x32">
+<link rel="icon" type="image/svg+xml" href="turkey.svg">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Gabarito:wght@700;900&family=Oleo+Script:wght@700&display=swap" rel="stylesheet">
@@ -66,35 +67,19 @@ body{margin:0}
 .five .now text{fill:var(--ink)}
 .five .note{margin-top:14px;font-size:15px;line-height:1.4}
 
-.deck{grid-column:5/13;position:relative}
+.deck{grid-column:5/13;position:relative;justify-self:end;width:100%;max-width:600px}
 .deck::before,.deck::after{content:"";position:absolute;left:28px;right:28px;bottom:-14px;height:40px;border-radius:0 0 28px 28px;background:#F7B9A6}
 .deck::after{left:56px;right:56px;bottom:-28px;background:#F19A82;z-index:0}
 .deck::before{z-index:1}
-.card{position:relative;z-index:2;background:var(--cr);color:var(--ink);border-radius:32px;padding:clamp(24px,3.6vw,52px)}
-.who{display:flex;align-items:center;gap:clamp(18px,2.2vw,32px)}
-.face{flex:none;display:flex;align-items:center;justify-content:center;width:clamp(84px,9.2vw,132px);height:clamp(84px,9.2vw,132px);border-radius:50%;background:var(--tom);color:var(--ink);font-family:var(--hf);font-weight:900;font-size:clamp(32px,3.5vw,50px);letter-spacing:-.02em;line-height:1}
-.cname{font-size:clamp(44px,5.8vw,84px);line-height:.9}
-.crole{margin-top:10px;font-size:clamp(18px,1.5vw,22px);font-weight:600;color:var(--mute)}
-.ask{margin-top:clamp(32px,3.4vw,48px);font-size:18px;font-weight:650}
-.field{position:relative;margin-top:12px;background:var(--tint);border-radius:22px;padding:22px 100px 20px 26px}
-.say{font-size:clamp(21px,2vw,29px);font-weight:600;line-height:1.26;letter-spacing:-.012em}
-.heard{margin-top:10px;font-size:16px;font-weight:600;color:var(--mute)}
-.mic{position:absolute;right:20px;top:50%;margin-top:-30px;width:60px;height:60px;border-radius:50%;background:var(--ox);color:var(--cr);display:flex;align-items:center;justify-content:center}
-.mic svg{width:26px;height:26px}
-.crow{display:flex;align-items:center;justify-content:flex-end;gap:12px;margin-top:24px}
-.cb{display:inline-flex;align-items:center;font-family:var(--hf);font-weight:900;font-size:21px;min-height:62px;padding:0 32px;border-radius:999px;color:var(--ink);background:var(--li)}
-.cb.line{background:transparent;box-shadow:inset 0 0 0 3px var(--ink)}
+.card{position:relative;z-index:2;margin:0;background:#fff;border-radius:32px;padding:clamp(12px,2vw,24px)}
+.pg img{display:block;width:100%;height:auto}
 
 .safe{padding-top:var(--sp);padding-bottom:var(--sp)}
 .sg{align-items:center}
 .sl{grid-column:1/7}
 .sl h2{color:var(--ox)}
 .sl .lede{margin-top:28px}
-.done{grid-column:8/13;--tk-gone:#DCC3AE}
-.done .tk{width:100%;max-width:420px;height:auto}
-.done figcaption{margin-top:20px}
-.done b{display:block;font-family:var(--hf);font-weight:900;font-size:clamp(24px,2.1vw,30px);line-height:1.05;color:var(--ox)}
-.done span{display:block;margin-top:6px;font-size:17px;color:var(--mute);font-weight:600}
+.done{grid-column:8/13;justify-self:end;width:100%;max-width:440px;background:#fff;border-radius:28px;padding:clamp(10px,1.4vw,18px);box-shadow:0 24px 48px -28px rgba(74,20,16,.45)}
 
 .close{padding-top:var(--sp)}
 .close h2{color:var(--tom);font-size:var(--M);line-height:.98}
@@ -130,17 +115,8 @@ body{margin:0}
 .five svg{width:100%;height:auto;max-width:60px}
 .deck::before{left:16px;right:16px}
 .deck::after{left:32px;right:32px}
-.card{padding:24px 18px 20px;border-radius:24px}
-.face{width:68px;height:68px;font-size:26px}
-.cname{font-size:40px}
-.crole{font-size:17px}
-.field{padding:14px 70px 14px 16px}
-.say{font-size:20px}
-.heard{font-size:14px}
-.mic{width:46px;height:46px;right:12px;margin-top:-23px}
-.crow{justify-content:space-between}
-.cb{padding:0 20px;flex:1;justify-content:center}
-.done .tk{max-width:260px}
+.card{padding:10px;border-radius:24px}
+.done{justify-self:start}
 .ways{row-gap:40px}
 .way li{font-size:17px}
 .foot{flex-direction:column;align-items:flex-start;font-size:15px}
@@ -170,7 +146,7 @@ body{margin:0}
 
 <header class="ox">
 <div class="w top">
-<a class="logo" href="/" aria-label="Gobbler, home"><svg class="tk" aria-hidden="true"><use href="#turkey"></use></svg><span>A plugin for Claude and ChatGPT</span></a>
+<a class="logo" href="./" aria-label="Gobbler, home"><svg class="tk" aria-hidden="true"><use href="#turkey"></use></svg><span>A plugin for Claude and ChatGPT</span></a>
 <nav aria-label="Page"><a href="#how">How it works</a><a href="#install">Install</a></nav>
 </div>
 </header>
@@ -180,7 +156,7 @@ body{margin:0}
 <div class="w">
 <h1 class="mark">Gobbler<svg class="bite" aria-hidden="true" viewBox="-10 -10 220 220"><circle cx="100" cy="100" r="66"></circle><circle cx="162" cy="100" r="44"></circle><circle cx="132.9" cy="152.6" r="40"></circle><circle cx="70.9" cy="154.7" r="46"></circle><circle cx="38" cy="97.8" r="40"></circle><circle cx="67.1" cy="47.4" r="45"></circle><circle cx="129.1" cy="45.3" r="41"></circle></svg></h1>
 <div class="g hg">
-<p class="h M tag"><span>Never forget anyone.</span><span>Only remember</span><span>who you care about.</span></p>
+<p class="h M tag"><span>Some people</span><span>made your life better.</span><span>Tell them.</span></p>
 <div class="act">
 <a class="btn" href="#claude">Add to Claude</a>
 <a class="btn line" href="#chatgpt">Add to ChatGPT</a>
@@ -191,36 +167,25 @@ body{margin:0}
 
 <section class="tm game" id="how" aria-labelledby="gob-game">
 <div class="w">
-<h2 class="h big" id="gob-game"><span>Like five a day.</span><span>But people.</span></h2>
+<h2 class="h big" id="gob-game"><span>Five people a day.</span><span>Say thanks.</span></h2>
 <div class="g stage">
 <div class="gl">
-<p class="lede">Every day Gobbler serves up five people from your Google Contacts, right in the chat.</p>
-<p class="lede">Keep someone by saying what you’re grateful for, typed or out loud. Let go and they leave your contacts. Five and you’re done.</p>
+<p class="lede">Every day, Gobbler shows you five people from your contacts.</p>
+<p class="lede">Say what you’re grateful for, and Gobbler turns it into a thank-you note.</p>
 <div class="five">
 <h3>Today’s five</h3>
 <ol>
 <li><svg viewBox="0 0 100 100" aria-hidden="true"><mask id="gob-bit" maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100"><rect width="100" height="100" fill="#fff"></rect><g transform="translate(88 12) scale(.34) translate(-100 -100)" fill="#000"><circle cx="100" cy="100" r="66"></circle><circle cx="162" cy="100" r="44"></circle><circle cx="132.9" cy="152.6" r="40"></circle><circle cx="70.9" cy="154.7" r="46"></circle><circle cx="38" cy="97.8" r="40"></circle><circle cx="67.1" cy="47.4" r="45"></circle><circle cx="129.1" cy="45.3" r="41"></circle></g></mask><g mask="url(#gob-bit)"><circle class="dot" cx="50" cy="50" r="48"></circle><text x="47" y="64" text-anchor="middle">A</text></g></svg><span>Abi</span></li>
-<li class="now"><svg viewBox="0 0 100 100" aria-hidden="true"><circle class="dot" cx="50" cy="50" r="46"></circle><text x="50" y="64" text-anchor="middle">B</text></svg><span>Bao</span></li>
+<li class="now"><svg viewBox="0 0 100 100" aria-hidden="true"><circle class="dot" cx="50" cy="50" r="46"></circle><text x="50" y="64" text-anchor="middle">B</text></svg><span>Beth</span></li>
 <li><svg viewBox="0 0 100 100" aria-hidden="true"><circle class="dot" cx="50" cy="50" r="48"></circle><text x="50" y="64" text-anchor="middle">C</text></svg><span>Chris</span></li>
 <li><svg viewBox="0 0 100 100" aria-hidden="true"><circle class="dot" cx="50" cy="50" r="48"></circle><text x="50" y="64" text-anchor="middle">D</text></svg><span>Dee</span></li>
 <li><svg viewBox="0 0 100 100" aria-hidden="true"><circle class="dot" cx="50" cy="50" r="48"></circle><text x="50" y="64" text-anchor="middle">E</text></svg><span>Emma</span></li>
 </ol>
-<p class="note">Abi’s been gobbled. Bao’s up.</p>
+<p class="note">Abi’s done. Beth’s next.</p>
 </div>
 </div>
 <div class="deck">
-<div class="card" role="img" aria-label="An example of Gobbler in a chat. Bao Nguyen, Year 9 English teacher. What are you grateful to Bao for? She told me my writing was worth reading. Buttons: Let go, Keep Bao.">
-<div class="who">
-<span class="face">BN</span>
-<div>
-<p class="h cname">Bao Nguyen</p>
-<p class="crole">Year 9 English teacher</p>
-</div>
-</div>
-<p class="ask">What are you grateful to Bao for?</p>
-<div class="field"><p class="say">She told me my writing was worth reading.</p><p class="heard">Said out loud, 6 seconds</p><span class="mic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0"></path><path d="M12 18v3"></path></svg></span></div>
-<div class="crow"><span class="cb line">Let go</span><span class="cb">Keep Bao</span></div>
-</div>
+<figure class="card shot"><img src="widget-keep.png" width="1332" height="1263" alt="Gobbler in a chat, on contact 2 of 5. Beth Harper, Year 9 English teacher. What are you grateful to Beth for? She told me my writing was worth reading. Buttons: Back, Keep Beth."></figure>
 </div>
 </div>
 </div>
@@ -229,20 +194,18 @@ body{margin:0}
 <section class="safe" aria-labelledby="gob-safe">
 <div class="w g sg">
 <div class="sl">
-<h2 class="h M" id="gob-safe"><span>Nobody is</span><span>ever lost.</span></h2>
-<p class="lede">Let someone go and they leave your Google Contacts. We still save them in the background, so if you ever need them again, they’re there.</p>
-<p class="lede">Nothing is sent to anyone. Bao doesn’t get a ping. The thank you is yours to say.</p>
+<h2 class="h M" id="gob-safe"><span>Then</span><span>tell them.</span></h2>
+<p class="lede">Gobbler writes a short thank-you note from your words. You read it, change anything you like, and send it.</p>
+<p class="lede">Nothing goes out until you say so.</p>
+<p class="lede">Someone no longer sparks joy? Thank them for their time, and let them go.</p>
 </div>
-<figure class="done">
-<svg class="tk" viewBox="-7 -5 98 84" role="img" aria-label="The Gobbler turkey. Its tail has five feathers, two bright and three pale."><use href="#turkey"></use></svg>
-<figcaption><b>That’s your five. Well gobbled.</b><span>2 thanked, 3 let go. A feather for each.</span></figcaption>
-</figure>
+<figure class="done"><img src="widget-done.png" width="1332" height="1805" alt="Gobbler done for today. That’s your five, well gobbled: 3 thanked, 2 let go, with what you’re grateful to Abi, Beth and Dee for."></figure>
 </div>
 </section>
 
 <section class="ox close" id="install" aria-labelledby="gob-install">
 <div class="w">
-<h2 class="h" id="gob-install">Your five are waiting.</h2>
+<h2 class="h" id="gob-install">Who do you owe a thank you?</h2>
 <div class="g ways">
 <div class="way" id="claude">
 <h3>Add it to Claude</h3>
@@ -262,10 +225,10 @@ body{margin:0}
 </ol>
 </div>
 </div>
-<p class="try">Want a go without signing in? Use <code>https://gobbler.build40for40.com/demo/mcp</code> for made-up contacts.</p>
+<p class="try">Just looking? Try <code>https://gobbler.build40for40.com/demo/mcp</code> with made-up contacts.</p>
 <footer class="foot">
 <p>Built in a day, live on Twitch, as Day 19 of 40 for 40.</p>
-<nav aria-label="Footer"><a href="/privacy">Privacy</a><a href="https://build40for40.com">build40for40.com</a></nav>
+<nav aria-label="Footer"><a href="privacy">Privacy</a><a href="https://build40for40.com">build40for40.com</a></nav>
 </footer>
 </div>
 </section>

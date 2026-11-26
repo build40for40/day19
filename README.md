@@ -69,7 +69,7 @@ pnpm --filter @day19/mcp wrangler secret put GOOGLE_CLIENT_SECRET
 pnpm --filter @day19/mcp deploy
 ```
 
-Then add `https://gobbler.build40for40.com/callback` to the Google client's redirect URIs, and `https://gobbler.build40for40.com/mcp` as a custom connector in Claude or ChatGPT. `https://gobbler.build40for40.com/demo/mcp` is the demo, with no sign-in. `build40for40.com/gobbler` and `day19.40for40.workers.dev` redirect to the same place.
+Then add `https://gobbler.build40for40.com/callback` to the Google client's redirect URIs, and `https://gobbler.build40for40.com/mcp` as a custom connector in Claude or ChatGPT. `https://gobbler.build40for40.com/demo/mcp` is the demo, with no sign-in. `build40for40.com/gobbler/` serves the same landing page, and `day19.40for40.workers.dev` redirects to the subdomain.
 
 ## Checks
 
