@@ -391,6 +391,7 @@ function done(contacts: Contact[]) {
   const letGo = by('let_go')
   const elsewhere = by('elsewhere')
   const names = (list: Contact[]) => list.map((contact) => contact.name).join(', ')
+  const left = progress ? Math.max(progress.total - progress.decided, 0) : 0
   const thanks = kept.map((contact) => {
     const outcome = outcomes.get(contact.id)
     return h('figure', { class: 'thanks' }, h('blockquote', {}, outcome?.kind === 'kept' ? outcome.gratitude : ''), h('figcaption', {}, contact.name))
@@ -400,22 +401,45 @@ function done(contacts: Contact[]) {
     { class: 'card deal done' },
     turkey(contacts.map((contact) => outcomes.get(contact.id)?.kind)),
     h('p', { class: 'done-title' }, contacts.length ? `That's your ${contacts.length === BATCH_SIZE ? 'five' : 'lot'}. Well gobbled.` : "That's today done"),
-    h('p', { class: 'done-body' }, contacts.length ? `${kept.length} thanked, ${letGo.length} let go.` : 'More contacts tomorrow.'),
+    h('p', { class: 'done-body' }, contacts.length ? `${kept.length} thanked, ${letGo.length} let go.` : left > 0 ? 'More tomorrow, or go again now.' : 'Your list is clean.'),
     ...thanks,
     letGo.length > 0 && h('p', { class: 'gone' }, `Let go: ${names(letGo)}`),
     elsewhere.length > 0 && h('p', { class: 'gone' }, `Sorted in the chat: ${names(elsewhere)}`),
     tracker(),
-    !fake &&
+    h('p', { class: 'error', role: 'alert' }, problem),
+    (left > 0 || !fake) &&
       h(
         'div',
         { class: 'row' },
-        h(
-          'button',
-          { click: () => void app.sendMessage({ role: 'user', content: [{ type: 'text', text: 'Show me my Brain.' }] }).catch(() => {}) },
-          'Read my Brain',
-        ),
+        !fake &&
+          h(
+            'button',
+            { click: () => void app.sendMessage({ role: 'user', content: [{ type: 'text', text: 'Show me my Brain.' }] }).catch(() => {}) },
+            'Read my Brain',
+          ),
+        // Five a day is the habit, not a wall: anyone on a roll can go again.
+        left > 0 && h('button', { class: 'primary grow', 'aria-busy': String(busy), click: () => void goAgain() }, left >= BATCH_SIZE ? 'Five more' : `The last ${left}`),
       ),
   )
+}
+
+/** Asks for the next five once today's are done. A let go still waiting on its undo is sent first. */
+async function goAgain() {
+  if (busy) return
+  busy = true
+  problem = ''
+  render()
+  try {
+    await commitLetGo()
+    const batch = await tools.more()
+    if (!batch.contacts.length) throw new Error('Nobody left to deal. Your list is clean.')
+    start(batch)
+    if (!fake) void app.updateModelContext({ content: [{ type: 'text', text: 'I asked for five more contacts in the widget.' }] }).catch(() => {})
+  } catch (error) {
+    busy = false
+    problem = error instanceof Error ? error.message : "Couldn't deal more. Give it another go."
+    render()
+  }
 }
 
 /** The bar that follows a let go: who it was, and a few seconds to take it back. */

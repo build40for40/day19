@@ -23,7 +23,13 @@ function setup(count = 8, start = '2026-11-26T10:00:00Z') {
     remove: async (id) => void (contacts = contacts.filter((c) => c.id !== id)),
   }
   const store: StateStore = { load: async () => structuredClone(saved), save: async (s) => void (saved = structuredClone(s)) }
-  return { game: new Game(source, store, () => now), contacts: () => contacts, setNow: (iso: string) => (now = new Date(iso)) }
+  return {
+    game: new Game(source, store, () => now),
+    contacts: () => contacts,
+    setNow: (iso: string) => (now = new Date(iso)),
+    /** Someone adds contacts to their address book part way through the day. */
+    grow: (count: number) => void (contacts = [...contacts, ...people(count).filter((c) => !contacts.some((have) => have.id === c.id))]),
+  }
 }
 
 const initials = (contacts: Contact[]) => contacts.map((c) => c.name[0])
@@ -82,6 +88,52 @@ describe('Game', () => {
     const day2 = await game.next()
     expect(initials(day2.contacts)).toEqual(['X', 'Y', 'Z'])
     expect(day2.doneForToday).toBe(false)
+  })
+
+  it('tops a short hand up to five when more contacts appear the same day', async () => {
+    const { game, grow } = setup(2)
+    const first = await game.next()
+    expect(initials(first.contacts)).toEqual(['Y', 'Z'])
+    await game.keep(first.contacts[0]!.id, 'thank you')
+    await game.letGo(first.contacts[1]!.id)
+    expect((await game.next()).doneForToday).toBe(true)
+
+    grow(8)
+    const more = await game.next()
+    expect(more.doneForToday).toBe(false)
+    // Three more, A to Z from the newcomers, to make five for the day. The two already decided still count.
+    expect(initials(more.contacts)).toEqual(['S', 'T', 'U'])
+    for (const contact of more.contacts) await game.keep(contact.id, 'thank you')
+    const after = await game.next()
+    expect(after).toMatchObject({ contacts: [], doneForToday: true, progress: { decided: 5, total: 8 } })
+  })
+
+  it('never deals more than five in a day, however many contacts are added', async () => {
+    const { game, grow } = setup(5)
+    for (const contact of (await game.next()).contacts) await game.keep(contact.id, 'thank you')
+    grow(8)
+    expect(await game.next()).toMatchObject({ contacts: [], doneForToday: true })
+  })
+
+  it('deals five more on request once the day\'s five are done, as often as asked', async () => {
+    const { game } = setup(12)
+    const first = await game.next()
+    // Asking for more while any are still waiting changes nothing.
+    expect((await game.next(undefined, true)).contacts).toEqual(first.contacts)
+    for (const contact of first.contacts) await game.keep(contact.id, 'thank you')
+    expect(await game.next()).toMatchObject({ contacts: [], doneForToday: true })
+
+    const second = await game.next(undefined, true)
+    expect(initials(second.contacts)).toEqual(['T', 'U', 'V', 'W', 'X'])
+    expect(second.doneForToday).toBe(false)
+    // A plain next keeps showing the round in play, and deciding from it works.
+    expect((await game.next()).contacts).toEqual(second.contacts)
+    for (const contact of second.contacts) await game.letGo(contact.id)
+
+    const third = await game.next(undefined, true)
+    expect(initials(third.contacts)).toEqual(['Y', 'Z'])
+    for (const contact of third.contacts) await game.keep(contact.id, 'thank you')
+    expect(await game.next(undefined, true)).toMatchObject({ contacts: [], doneForToday: true, progress: { decided: 12, total: 12 } })
   })
 
   it('says so when the Brain is empty', async () => {

@@ -19,6 +19,7 @@ Starting the game: the person's way in is "Let's Gobble". Call ${TOOL.start} str
 - Never write the gratitude for them, and never keep a contact without it. If they want to keep someone but haven't said why, ask what they're grateful to that person for.
 - Only call ${TOOL.letGo} when the person clearly says to let go of or delete that contact. It deletes the contact from their contacts list and from any phone synced to it. A copy stays in the Brain.
 - After deciding in the chat, call ${TOOL.start} again if they want to see where they are.
+- Five a day is the habit, not a limit. When today's are done and the person asks for more ("five more", "keep going"), call ${TOOL.next} with more set to true, then ${TOOL.start}. Don't deal more unless they ask.
 - This server never sends anything to the contacts themselves.
 
 Thank-you emails, only when the person asks for them ("draft thank-yous", "write to Jeff"):
@@ -38,6 +39,7 @@ export const TEXT = {
     title: 'Next contacts',
     description: `Returns up to ${BATCH_SIZE} of today's contacts that haven't been decided yet. When signed in with Google, today's ${BATCH_SIZE} are the 3 contacts edited longest ago plus the 2 most likely to matter (starred, family, birthday, photo...), so there's someone to thank. In the demo they're A to Z. No widget. The widget calls this to refresh.`,
     limit: `How many to return, 1 to ${BATCH_SIZE}. Defaults to ${BATCH_SIZE}.`,
+    more: `Deals ${BATCH_SIZE} more once today's contacts are all decided. Only set it when the person asks to keep going. It does nothing while any of today's are still waiting.`,
   },
   keep: {
     title: 'Keep a contact, with gratitude',
@@ -95,7 +97,10 @@ const progressText = ({ decided, total }: Progress) => `${decided} of ${total} c
 
 /** What the model reads. The widget reads the structured version of the same thing. */
 export function batchText({ contacts, progress, doneForToday }: Batch): string {
-  if (doneForToday) return `That's today's contacts done. More tomorrow. ${progressText(progress)}`
+  if (doneForToday) {
+    const more = progress.total > progress.decided ? ` More tomorrow, or if they ask to keep going, call ${TOOL.next} with more set to true and then ${TOOL.start} to show them.` : ' Nobody is left to sort.'
+    return `That's today's contacts done.${more} ${progressText(progress)}`
+  }
   const lines = contacts.map((contact) => `- ${contact.name} (id ${contact.id}${contact.organisation ? `, ${contact.organisation}` : ''})`)
   return [`${contacts.length} still to decide today. ${progressText(progress)}`, ...lines].join('\n')
 }

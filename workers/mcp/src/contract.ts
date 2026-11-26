@@ -38,7 +38,7 @@ export interface Decided {
 export const TOOL = {
   /** Opens the widget. No arguments. Returns a Batch. */
   start: 'start_game',
-  /** `{ limit?: 1 to 5 }`. Returns a Batch. */
+  /** `{ limit?: 1 to 5, more?: boolean }`. Returns a Batch. `more` deals five more once today's are all decided. */
   next: 'next_contacts',
   /** `{ id, gratitude }`. Returns Decided. */
   keep: 'keep_contact',

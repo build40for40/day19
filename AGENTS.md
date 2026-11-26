@@ -27,7 +27,7 @@ A contact is `{ id, name, emails[], phones[], photoUrl, organisation }`. `photoU
 | Tool | Arguments | Returns (`structuredContent`) |
 | --- | --- | --- |
 | `start_game` | none | `{ contacts[], progress, doneForToday }`, and opens the widget |
-| `next_contacts` | `{ limit? }`, 1 to 5, default 5 | `{ contacts[], progress, doneForToday }` |
+| `next_contacts` | `{ limit?, more? }`, limit 1 to 5, default 5 | `{ contacts[], progress, doneForToday }` |
 | `keep_contact` | `{ id, gratitude }` | `{ id, decision: "kept", progress }` |
 | `let_go_contact` | `{ id }` | `{ id, decision: "let_go", progress }` |
 | `progress` | none | `{ decided, total }` |
@@ -36,7 +36,7 @@ What the widget relies on, beyond the names:
 
 - **`contacts`** are today's undecided contacts, at most `limit`: A to Z in the demo, 3 oldest plus 2 likely-meaningful when signed in. `start_game` returns the same thing as `next_contacts` with no arguments, so the widget draws from the tool result and needs no second call.
 - **`progress`** comes back with every result, so the "12 of 340 decided" line never needs its own call. `total` counts everyone, including people already let go.
-- **`doneForToday`** is true once today's five are all decided. The server owns the five a day rule: it picks the five once per UK day and `next_contacts` only ever returns what's left of them.
+- **`doneForToday`** is true once today's hand is all decided. The server owns the five a day rule: it picks five at the start of each UK day, and `next_contacts` returns what's left of them. Two things can add to the hand the same day: a hand that started with fewer than five is topped up when more contacts appear, and `next_contacts` with `more: true` deals five more once the hand is all decided. Five a day is the habit, not a limit. The widget's done screen has a "Five more" button for it, and the assistant only passes `more` when the person asks.
 - **Errors** come back as a normal tool result with `isError: true` and one plain-English sentence as text, which the widget shows as it is ("Say what you're grateful to Bao for first."). No `structuredContent` on an error.
 - **Text for the assistant**: every result also has a `content` text version of the same data, because the assistant reads that and the widget reads `structuredContent`.
 - Deciding the same contact twice is an error. The widget then calls `next_contacts` and skips anyone already decided, which is how a contact kept by telling the assistant drops out of the widget.
@@ -127,7 +127,6 @@ Stretch: an archive middle option, sending the gratitude (message, email, letter
 
 ## Still open
 
-- Lawrence decided that after five a day the game nudges but allows more, and the game today stops at five (`doneForToday`) until tomorrow. Pick one.
 - Lawrence decided keep also appends a dated block to the contact's Google Notes, never overwriting. Not built yet: today the gratitude is saved in the Brain only.
 - How strict the gratitude box is (today: at least 3 characters).
 - An undo for let go, restoring from the snapshot.

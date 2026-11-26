@@ -54,7 +54,7 @@ describe('a signed-in Brain', () => {
     const brain = env.BRAINS.get(env.BRAINS.idFromName('google-test-user'))
     await brain.setProfile({ userId: 'google-test-user', email: 'me@example.com', familyName: 'Example' })
 
-    const batch = await brain.next(undefined, 'fake-token')
+    const batch = await brain.next(undefined, false, 'fake-token')
     expect(batch.contacts.map((c) => c.name)).toEqual(['Eve Mum', 'Fay Friend', 'Cat Oldest', 'Ben Older', 'Ada Old'])
     expect(batch.contacts[0]).toEqual({ id: 'people/e', name: 'Eve Mum', emails: ['e@example.com'], phones: [], photoUrl: null, organisation: '' })
     expect(batch.progress).toEqual({ decided: 0, total: 6 })

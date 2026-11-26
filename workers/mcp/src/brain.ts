@@ -215,8 +215,8 @@ export class Brain extends DurableObject<Env> {
     this.setMeta('family_name', profile.familyName)
   }
 
-  async next(limit?: number, accessToken?: string): Promise<Batch> {
-    return (await this.game(accessToken)).next(limit)
+  async next(limit?: number, more?: boolean, accessToken?: string): Promise<Batch> {
+    return (await this.game(accessToken)).next(limit, more)
   }
 
   async progress(accessToken?: string): Promise<Progress> {

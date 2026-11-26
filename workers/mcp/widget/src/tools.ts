@@ -4,9 +4,11 @@ import { DEMO_CONTACTS, type ContactSource } from '../../src/contacts'
 import { TOOL, type Batch, type Decided } from '../../src/contract'
 import { Game, type GameState, type StateStore } from '../../src/game'
 
-/** The three things the widget asks the server to do. Everything it shows comes back from these. */
+/** The things the widget asks the server to do. Everything it shows comes back from these. */
 export interface Tools {
   next(): Promise<Batch>
+  /** Five more, once today's are all decided. */
+  more(): Promise<Batch>
   keep(id: string, gratitude: string): Promise<Decided>
   letGo(id: string): Promise<Decided>
 }
@@ -25,6 +27,7 @@ export function mcpTools(app: App): Tools {
   }
   return {
     next: () => call<Batch>(TOOL.next, {}),
+    more: () => call<Batch>(TOOL.next, { more: true }),
     keep: (id, gratitude) => call<Decided>(TOOL.keep, { id, gratitude }),
     letGo: (id) => call<Decided>(TOOL.letGo, { id }),
   }
@@ -37,5 +40,5 @@ export function fakeTools(): Tools {
   const source: ContactSource = { list: async () => contacts, remove: async (id) => void (contacts = contacts.filter((c) => c.id !== id)) }
   const store: StateStore = { load: async () => structuredClone(state), save: async (next) => void (state = structuredClone(next)) }
   const game = new Game(source, store)
-  return { next: () => game.next(), keep: (id, gratitude) => game.keep(id, gratitude), letGo: (id) => game.letGo(id) }
+  return { next: () => game.next(), more: () => game.next(undefined, true), keep: (id, gratitude) => game.keep(id, gratitude), letGo: (id) => game.letGo(id) }
 }
