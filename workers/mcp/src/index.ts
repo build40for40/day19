@@ -4,6 +4,8 @@
 //   client registration and /oauth/token itself.
 // - /demo/mcp is the same game on made-up contacts, with no sign-in. It is open,
 //   as it was before sign-in existed.
+// - / is Ben's landing page from landing/, and /privacy the privacy policy.
+// Everything lives on MCP_RESOURCE's host; other addresses redirect there first (hosts.ts).
 
 import { OAuthError, OAuthProvider } from '@cloudflare/workers-oauth-provider'
 import { env } from 'cloudflare:workers'
@@ -11,6 +13,7 @@ import { env } from 'cloudflare:workers'
 import { authHandler } from './auth'
 import { DEMO_MCP_PATH, MCP_PATH } from './env'
 import { GoogleRevokedError, refreshAccessToken, type GoogleProps } from './google'
+import { redirectToHome } from './hosts'
 import { handleMcp } from './mcp/server'
 
 export { Brain } from './brain'
@@ -23,7 +26,7 @@ const openRoutes = {
   },
 }
 
-export default new OAuthProvider<Env>({
+const provider = new OAuthProvider<Env>({
   apiRoute: MCP_PATH,
   apiHandler: {
     fetch(request: Request, env: Env, ctx: ExecutionContext) {
@@ -63,3 +66,9 @@ export default new OAuthProvider<Env>({
     }
   },
 })
+
+export default {
+  fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> | Response {
+    return redirectToHome(request, env.MCP_RESOURCE) ?? provider.fetch(request, env, ctx)
+  },
+} satisfies ExportedHandler<Env>

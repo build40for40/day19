@@ -6,7 +6,7 @@ export const PRIVACY_UPDATED = "26 November 2026";
 export const privacyBody = `<h1>Privacy</h1>
 <p class="muted">Last updated ${PRIVACY_UPDATED}</p>
 
-<p>This is the Day 19 app from <a href="https://build40for40.com">40 for 40</a>, a game for your Google Contacts that you play inside Claude or ChatGPT. Each day it shows you a few contacts. You keep each one by saying what you're grateful for, or you let them go.</p>
+<p>This is Gobbler, built on day 19 of <a href="https://build40for40.com">40 for 40</a>: a game for your Google Contacts that you play inside Claude or ChatGPT. Each day it shows you a few contacts. You keep each one by saying what you're grateful for, or you let them go.</p>
 
 <h2>What we read</h2>
 <p>When you sign in with Google, you let us see and edit your Google Contacts. We read each contact's name, email addresses, phone numbers, photo, organisation, labels, birthday and notes, plus your own name and email address so we know whose contacts these are.</p>

@@ -3,8 +3,8 @@
 Day 19 of 40 for 40, built live on Twitch on Thursday 26 November 2026. The problem is "Gratitude stays unsaid", from a submitter shown on the site as "The". Work is tracked on the Superthread `day19` board and the "Day 19" page.
 
 - **Form factor:** a Claude and ChatGPT plugin (MCP).
-- **Name:** TBC. The repo stays `day19` until the app has a name, then it's renamed and served at `build40for40.com/<app>/`.
-- **Layout:** a pnpm monorepo. `workers/mcp` is the one Worker: the MCP server, its widget, Google sign-in and each person's Brain, served at `https://day19.40for40.workers.dev` until the app has a name. The landing page goes in `apps/`. Setup and commands are in `README.md`. Paths below are inside `workers/mcp`.
+- **Name:** Gobbler. It lives at `https://gobbler.build40for40.com` (a Worker custom domain, like Day 13's `dumpling`), because sign-in tokens are bound to one host and OAuth discovery needs that host's root. `build40for40.com/gobbler` and the old `day19.40for40.workers.dev` redirect there (`src/hosts.ts`). The repo and the Worker are still called `day19`.
+- **Layout:** a pnpm monorepo. `workers/mcp` is the one Worker: the MCP server, its widget, Google sign-in and each person's Brain, served at `https://gobbler.build40for40.com`. Ben's landing page is `workers/mcp/landing/index.html`, served at `/` as the Worker's static assets, with any CSS and images next to it. The Worker runs first, so don't add files there named `mcp`, `authorize`, `callback`, `privacy` or `oauth`. `/privacy` is the privacy policy Google's consent screen links to (`src/privacy.ts`). Setup and commands are in `README.md`. Paths below are inside `workers/mcp`.
 - **JavaScript and TypeScript dependencies:** pnpm, as one workspace. Run `pnpm install` from the root and `pnpm --filter @day19/mcp add <dep>` to add one. Never npm or yarn, and never a `package-lock.json`.
 
 Shared 40 for 40 context lives in `../AGENTS.md`.

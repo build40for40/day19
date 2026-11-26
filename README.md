@@ -7,7 +7,7 @@ Day 19 of [40 for 40](https://build40for40.com): a Claude and ChatGPT plugin tha
 | Folder | What it is |
 | --- | --- |
 | `workers/mcp` | The one Worker: the MCP server and its keep or let go widget, Google sign-in, and each person's Brain |
-| `apps/` | Coming: the landing page |
+| `workers/mcp/landing/` | Ben's landing page, served at `/` |
 
 ## Run it on your laptop
 
@@ -69,7 +69,7 @@ pnpm --filter @day19/mcp wrangler secret put GOOGLE_CLIENT_SECRET
 pnpm --filter @day19/mcp deploy
 ```
 
-Then add `https://day19.40for40.workers.dev/callback` to the Google client's redirect URIs, and `https://day19.40for40.workers.dev/mcp` as a custom connector in Claude or ChatGPT. `https://day19.40for40.workers.dev/demo/mcp` is the demo, with no sign-in.
+Then add `https://gobbler.build40for40.com/callback` to the Google client's redirect URIs, and `https://gobbler.build40for40.com/mcp` as a custom connector in Claude or ChatGPT. `https://gobbler.build40for40.com/demo/mcp` is the demo, with no sign-in. `build40for40.com/gobbler` and `day19.40for40.workers.dev` redirect to the same place.
 
 ## Checks
 
