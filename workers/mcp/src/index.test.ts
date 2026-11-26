@@ -45,4 +45,13 @@ describe("worker", () => {
     expect((await call("/")).status).toBe(200);
     expect((await call("/nope")).status).toBe(404);
   });
+
+  it("serves the privacy policy Google links to, and the home page links it", async () => {
+    const privacy = await call("/privacy");
+    expect(privacy.status).toBe(200);
+    const text = await privacy.text();
+    expect(text).toContain("Google API Services User Data Policy");
+    expect(text).toContain("hello@40for40.app");
+    expect(await (await call("/")).text()).toContain('href="/privacy"');
+  });
 });
