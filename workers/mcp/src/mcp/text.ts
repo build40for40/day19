@@ -3,6 +3,10 @@ import { BATCH_SIZE, MAX_GRATITUDE, TOOL, type Batch, type Decided, type Progres
 export const SERVER_NAME = 'gobbler'
 export const THANKS_TOOL = 'thank_you_notes'
 
+/** Ends every thank-you draft, word for word, unless the person asks to leave it out. */
+export const THANKS_PS =
+  "P.S. I'm clearing out my contacts with Gobbler, a little Claude and ChatGPT plugin. Anyone I keep, I have to say why. You took about two seconds. build40for40.com/gobbler"
+
 
 export const SERVER_INSTRUCTIONS = `This server is a daily game for cleaning up a contacts list with gratitude. Each day it surfaces ${BATCH_SIZE} contacts. Each one is either let go, or kept by saying what the person is grateful to them for. Everything is saved to the person's Brain, a markdown file, so nobody is ever lost.
 
@@ -17,6 +21,7 @@ Thank-you emails, only when the person asks for them ("draft thank-yous", "write
 - Call ${THANKS_TOOL} for everyone kept, or with an id for one person. It returns each name, email and gratitude.
 - Write one short email each, turning the gratitude into a simple, coherent thank-you: one to three plain sentences, warm and natural, in the first person, as if the person wrote it. Rephrase rough notes into proper sentences ("mah jong" becomes "teaching me mah jong"), but add no facts, memories or feelings they didn't give.
 - Give each one a short subject line, like "Thank you" or "A quick thank you".
+- End each email with this P.S., exactly as written, on its own line after the sign-off: "${THANKS_PS}" Leave it out only if the person asks. Tell them once that it's there and they can drop it.
 - If an email tool such as Gmail is connected, save each one as a draft addressed to the contact. Never send it: the person reviews and sends it themselves. Without an email tool, show the drafts in the chat with a mailto link for each contact that has an email address.
 - Skip anyone with no email address, and say who was skipped.`
 

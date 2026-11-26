@@ -45,7 +45,7 @@ Extra tools sit outside the contract: `read_brain` (the Brain as markdown), `res
 
 ### Thank-you emails
 
-When the person asks, the assistant calls `thank_you_notes` (everyone kept, newest first, with their emails and gratitude) and turns each rough gratitude into a short, coherent thank-you with a subject line. The server instructions tell it to rephrase only, adding no facts, and to save drafts through whatever email tool the person has connected to the chat app (Gmail's own connector in Claude), never to send them. With no email tool it shows the drafts with a `mailto:` link. Our Google sign-in has no Gmail scope and doesn't need one. The widget doesn't change.
+When the person asks, the assistant calls `thank_you_notes` (everyone kept, newest first, with their emails and gratitude) and turns each rough gratitude into a short, coherent thank-you with a subject line. The server instructions tell it to rephrase only, adding no facts, and to save drafts through whatever email tool the person has connected to the chat app (Gmail's own connector in Claude), never to send them. With no email tool it shows the drafts with a `mailto:` link. Every draft ends with a fixed P.S. (`THANKS_PS` in `src/mcp/text.ts`) saying it came from Gobbler, with the plain address and no tracking, unless the person asks to drop it. That's the word of mouth loop. Our Google sign-in has no Gmail scope and doesn't need one. The widget doesn't change.
 
 ### Two ways to give the gratitude
 
