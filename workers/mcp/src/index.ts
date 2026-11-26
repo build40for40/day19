@@ -2,16 +2,15 @@
 // - /mcp needs a token from Google sign-in, and plays the game on the person's own contacts.
 // - /authorize and /callback are the sign-in pages (auth.ts); the library serves discovery,
 //   client registration and /oauth/token itself.
-// - /demo/mcp is the same game on made-up contacts, with no sign-in, and /transcribe turns
-//   the widget's voice clips into words. Both are open, as they were before sign-in existed.
+// - /demo/mcp is the same game on made-up contacts, with no sign-in. It is open,
+//   as it was before sign-in existed.
 
 import { OAuthError, OAuthProvider } from '@cloudflare/workers-oauth-provider'
 import { env } from 'cloudflare:workers'
 
 import { authHandler } from './auth'
-import { DEMO_MCP_PATH, MCP_PATH, TRANSCRIBE_PATH } from './env'
+import { DEMO_MCP_PATH, MCP_PATH } from './env'
 import { GoogleRevokedError, refreshAccessToken, type GoogleProps } from './google'
-import { handleTranscribe } from './hear'
 import { handleMcp } from './mcp/server'
 
 export { Brain } from './brain'
@@ -20,7 +19,6 @@ const openRoutes = {
   fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const { pathname } = new URL(request.url)
     if (pathname === DEMO_MCP_PATH) return handleMcp(request, env, ctx, { kind: 'demo' }, DEMO_MCP_PATH)
-    if (pathname === TRANSCRIBE_PATH) return handleTranscribe(request, env)
     return authHandler.fetch(request, env as Parameters<typeof authHandler.fetch>[1], ctx)
   },
 }

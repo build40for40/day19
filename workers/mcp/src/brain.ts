@@ -223,9 +223,9 @@ export class Brain extends DurableObject<Env> {
     return (await this.game(accessToken)).progress()
   }
 
-  async keep(id: string, gratitude: string, spoken: boolean, accessToken?: string): Promise<Outcome<Decided>> {
+  async keep(id: string, gratitude: string, accessToken?: string): Promise<Outcome<Decided>> {
     const game = await this.game(accessToken)
-    const result = await outcome(() => game.keep(id, gratitude, spoken))
+    const result = await outcome(() => game.keep(id, gratitude))
     if (result.ok && this.signedIn) {
       const saved = (await this.store.load())?.brain[id]?.decision
       this.sql.exec(

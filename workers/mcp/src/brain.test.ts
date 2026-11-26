@@ -59,7 +59,7 @@ describe('a signed-in Brain', () => {
     expect(batch.contacts[0]).toEqual({ id: 'people/e', name: 'Eve Mum', emails: ['e@example.com'], phones: [], photoUrl: null, organisation: '' })
     expect(batch.progress).toEqual({ decided: 0, total: 6 })
 
-    const kept = await brain.keep('people/e', 'She taught me to swim', false, 'fake-token')
+    const kept = await brain.keep('people/e', 'She taught me to swim', 'fake-token')
     expect(kept).toMatchObject({ ok: true, value: { decision: 'kept' } })
 
     const gone = await brain.letGo('people/c', 'fake-token')

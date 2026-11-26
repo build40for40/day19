@@ -8,8 +8,6 @@
   "main": "src/index.ts",
   // The widget is one built HTML file (dist/widget.html), bundled into the Worker as text.
   "rules": [{ "type": "Text", "globs": ["**/*.html"], "fallthrough": true }],
-  // Speech to text for the widget's Speak button.
-  "ai": { "binding": "AI" },
 
   // The URL MCP clients connect to. Every token is bound to it.
   // Local dev overrides it in .dev.vars with http://localhost:8788/mcp.

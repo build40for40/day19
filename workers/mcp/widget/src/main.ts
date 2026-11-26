@@ -3,7 +3,6 @@ import { App, applyDocumentTheme, applyHostFonts, applyHostStyleVariables, type 
 import { MAX_GRATITUDE, MIN_GRATITUDE, type Batch, type Contact, type Progress } from '../../src/contract'
 import './style.css'
 import { fakeTools, mcpTools, type Tools } from './tools'
-import { record, type Recording } from './voice'
 
 type Child = Node | string | false | undefined
 type Props = Record<string, string | boolean | ((event: Event) => void)>
@@ -36,10 +35,6 @@ let keeping = false
 let busy = false
 let problem = ''
 let draft = ''
-let spoken = false
-let listener: Recording | undefined
-// Set once the chat app has said no to the microphone. The Speak button then gives way to a nudge to say it to the assistant.
-let micRefused = false
 
 const firstName = (contact: Contact) => contact.name.split(' ')[0] ?? contact.name
 const initials = (contact: Contact) =>
@@ -53,18 +48,11 @@ const initials = (contact: Contact) =>
 const isBatch = (value: unknown): value is Batch =>
   typeof value === 'object' && value !== null && Array.isArray((value as Batch).contacts) && typeof (value as Batch).doneForToday === 'boolean'
 
-function stopListening() {
-  listener?.stop()
-  listener = undefined
-}
-
 function reset() {
   keeping = false
   busy = false
   problem = ''
   draft = ''
-  spoken = false
-  stopListening()
 }
 
 /** A fresh batch from the server: what a new widget starts from. */
@@ -182,57 +170,11 @@ function gratitude(contact: Contact) {
   const box = h('textarea', { id: 'gratitude', maxlength: String(MAX_GRATITUDE), placeholder: 'She told me my writing was worth reading' })
   box.value = draft
   const error = h('p', { class: 'error', role: 'alert' }, problem)
-  const status = h('span', {}, '')
-  const mic = h('button', { type: 'button' }, 'Speak')
 
   box.addEventListener('input', () => {
     draft = box.value
     error.textContent = ''
     problem = ''
-  })
-
-  const idle = (why?: string) => {
-    listener = undefined
-    mic.textContent = 'Speak'
-    mic.classList.remove('listening')
-    mic.removeAttribute('aria-busy')
-    status.textContent = ''
-    if (why) error.textContent = problem = why
-  }
-
-  mic.addEventListener('click', async () => {
-    error.textContent = problem = ''
-    if (listener) return listener.stop()
-    const transcribe = tools.transcribe
-    if (!transcribe) return
-    status.textContent = 'Checking the mic…'
-    const started = await record(async (clip, why) => {
-      if (!clip) return idle(why)
-      listener = undefined
-      mic.classList.remove('listening')
-      mic.textContent = 'Speak'
-      mic.setAttribute('aria-busy', 'true')
-      status.textContent = 'Writing it down…'
-      try {
-        const { text } = await transcribe(clip.audio, clip.mimeType)
-        const before = box.value.trim()
-        box.value = draft = `${before ? `${before} ` : ''}${text}`.slice(0, MAX_GRATITUDE)
-        spoken = true
-        idle()
-      } catch (failure) {
-        idle(failure instanceof Error ? failure.message : "Couldn't turn that into words. Try again or type it.")
-      }
-    })
-    if ('problem' in started) {
-      if (!started.refused) return idle(started.problem)
-      micRefused = true
-      listener = undefined
-      return render()
-    }
-    listener = started
-    mic.textContent = 'Stop'
-    mic.classList.add('listening')
-    status.textContent = 'Listening… tap Stop when you\'re done'
   })
 
   const save = () => {
@@ -241,10 +183,9 @@ function gratitude(contact: Contact) {
       error.textContent = problem = "Say what you're grateful for first"
       return
     }
-    stopListening()
     void decide(
       contact,
-      () => tools.keep(contact.id, text, spoken),
+      () => tools.keep(contact.id, text),
       { kind: 'kept', gratitude: text },
       `I kept ${contact.name} in the widget and said what I'm grateful for. It's saved in the Brain.`,
     )
@@ -253,13 +194,8 @@ function gratitude(contact: Contact) {
   return h(
     'div',
     {},
-    h('label', { for: 'gratitude' }, `What are you grateful to ${firstName(contact)} for? Type it or say it.`),
+    h('label', { for: 'gratitude' }, `What are you grateful to ${firstName(contact)} for? `),
     box,
-    micRefused
-      ? h('p', { class: 'hint' }, `This chat app won't let the widget use the mic. To say it out loud, tell the assistant: "keep ${firstName(contact)}, because…"`)
-      : tools.transcribe
-        ? h('div', { class: 'voice' }, mic, status)
-        : false,
     error,
     h(
       'div',
@@ -268,7 +204,6 @@ function gratitude(contact: Contact) {
         'button',
         {
           click: () => {
-            stopListening()
             keeping = false
             problem = ''
             render()
@@ -338,23 +273,14 @@ if (fake) {
     if (isBatch(result.structuredContent)) start(result.structuredContent)
   }
   app.onhostcontextchanged = styleFromHost
-  app.onteardown = async () => {
-    stopListening()
-    return {}
-  }
+  app.onteardown = async () => ({})
   app.onerror = console.error
-  // Coming back to the chat after deciding out loud: drop anyone the assistant has already dealt with.
+  // Coming back to the widget after deciding in the chat: drop anyone the assistant has already dealt with.
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && batch && !busy && !keeping) void catchUp().then(render, () => {})
   })
   void app.connect().then(() => {
     const context = app.getHostContext()
     if (context) styleFromHost(context)
-    // Some chat apps say up front which permissions the widget got. Phones don't, so there the button finds out when pressed.
-    const granted = app.getHostCapabilities()?.sandbox?.permissions
-    if (granted && !granted.microphone) {
-      micRefused = true
-      render()
-    }
   })
 }

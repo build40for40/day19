@@ -28,27 +28,27 @@ A contact is `{ id, name, emails[], phones[], photoUrl, organisation }`. `photoU
 | --- | --- | --- |
 | `start_game` | none | `{ contacts[], progress, doneForToday }`, and opens the widget |
 | `next_contacts` | `{ limit? }`, 1 to 5, default 5 | `{ contacts[], progress, doneForToday }` |
-| `keep_contact` | `{ id, gratitude, spoken? }` | `{ id, decision: "kept", progress }` |
+| `keep_contact` | `{ id, gratitude }` | `{ id, decision: "kept", progress }` |
 | `let_go_contact` | `{ id }` | `{ id, decision: "let_go", progress }` |
 | `progress` | none | `{ decided, total }` |
-| `transcribe` | `{ audio, mimeType }`, audio as base64 | `{ text }`. Only the widget calls it, for the Speak button |
 
 What the widget relies on, beyond the names:
 
 - **`contacts`** are today's undecided contacts, at most `limit`: A to Z in the demo, 3 oldest plus 2 likely-meaningful when signed in. `start_game` returns the same thing as `next_contacts` with no arguments, so the widget draws from the tool result and needs no second call.
 - **`progress`** comes back with every result, so the "12 of 340 decided" line never needs its own call. `total` counts everyone, including people already let go.
 - **`doneForToday`** is true once today's five are all decided. The server owns the five a day rule: it picks the five once per UK day and `next_contacts` only ever returns what's left of them.
-- **`spoken`** is optional and true when the gratitude was said out loud. It's saved with the gratitude.
 - **Errors** come back as a normal tool result with `isError: true` and one plain-English sentence as text, which the widget shows as it is ("Say what you're grateful to Bao for first."). No `structuredContent` on an error.
 - **Text for the assistant**: every result also has a `content` text version of the same data, because the assistant reads that and the widget reads `structuredContent`.
-- Deciding the same contact twice is an error. The widget then calls `next_contacts` and skips anyone already decided, which is how a contact kept by talking to the assistant drops out of the widget.
+- Deciding the same contact twice is an error. The widget then calls `next_contacts` and skips anyone already decided, which is how a contact kept by telling the assistant drops out of the widget.
 
 Extra tools sit outside the contract: `read_brain` (the Brain as markdown), `reset_demo` (demo endpoint only, puts the made-up contacts back), and `sync_contacts` and `list_contacts` (signed in only).
 
-### Two ways to speak the gratitude
+### Two ways to give the gratitude
 
-- **Talking to the assistant**: the person says "keep her, she told me my writing was worth reading" and the assistant calls `keep_contact` with their words and `spoken: true`. The server instructions tell it never to write the gratitude itself. This works wherever the chat app has voice.
-- **The Speak button** in the widget records up to 30 seconds from the microphone and sends the clip to `transcribe`, which runs Cloudflare's Whisper model (Workers AI) and returns the words for the same box. The browser's own speech to text isn't used: in the Claude desktop app it errors, because there's no speech service behind it. The widget posts the clip straight to the Worker's `/transcribe` address (allowed through `csp.connectDomains`), and only falls back to the `transcribe` tool call when the chat app blocks that, with a 25 second limit either way. The button needs the chat app to give the widget the microphone. Where it won't, the button is replaced by a line telling the person to say it to the assistant. The audio isn't stored.
+- **Typing it in the widget's box.**
+- **Telling the assistant in the chat**: the person says "keep her, she told me my writing was worth reading" and the assistant calls `keep_contact` with their words. The server instructions tell it never to write the gratitude itself.
+
+There is no voice input. The widget had a Speak button that recorded a clip and sent it to a `transcribe` tool (Cloudflare's Whisper model), and it was taken out on Day 19: the Claude desktop app wouldn't give the widget the microphone, and where it did, the clip hung on its way to the server. The `spoken` flag on `keep_contact` went with it.
 
 ### What MCP and MCP Apps need, and where it's met
 
@@ -56,10 +56,9 @@ Extra tools sit outside the contract: `read_brain` (the Brain as markdown), `res
 - **One tool opens it**: `start_game` has `_meta.ui.resourceUri` pointing at it. The other tools have no widget, so the assistant can call them without drawing a new one each time.
 - **Every tool declares `inputSchema` and `outputSchema`**, and its `structuredContent` matches the output schema.
 - **Annotations**: `readOnlyHint` on the three that only read, `destructiveHint` on `let_go_contact` so chat apps ask before the assistant deletes anyone.
-- **Permissions and CSP live on the resource**, not the tool: `permissions.microphone` for the Speak button, and `csp.resourceDomains` allowing `https://lh3.googleusercontent.com`, where Google serves contact photos. Check that host against real People API photo URLs once sign-in works.
+- **CSP lives on the resource**, not the tool: `csp.resourceDomains` allows `https://lh3.googleusercontent.com`, where Google serves contact photos. Check that host against real People API photo URLs once sign-in works.
 - **The widget talks through the `App` class** only: `ontoolresult` for the first batch, `callServerTool` for the buttons, `updateModelContext` to tell the assistant what was decided, and the host's theme and fonts.
-- **`transcribe` is hidden from the assistant** with `_meta.ui.visibility: ["app"]`.
-- **OAuth on `/mcp`**: done. `/demo/mcp` and `transcribe` stay open, so anyone with the address can use `transcribe` on the team's Cloudflare bill (about $0.0005 a minute of audio).
+- **OAuth on `/mcp`**: done. `/demo/mcp` stays open to anyone with the address.
 
 ## Commands
 
@@ -91,7 +90,7 @@ Written by Samira on the day.
 - For each contact there are two options:
   1. **Delete the contact** ("let go" in the widget). It gets deleted from the Google Contacts list, but it is stored in the "Brain" (a markdown file) first.
   2. **Keep the contact.** To keep it I have to fill out a short text box saying what I'm grateful for. The contact stays in Google Contacts, and the gratitude is saved into the Brain with the contact.
-- The gratitude can be typed or spoken. Voice input fills the same box.
+- The gratitude is typed into the box, or told to the assistant in the chat. Voice input was dropped on Day 19.
 
 ## What we're building
 
@@ -128,7 +127,7 @@ Stretch: an archive middle option, sending the gratitude (message, email, letter
 - Lawrence decided keep also appends a dated block to the contact's Google Notes, never overwriting. Not built yet: today the gratitude is saved in the Brain only.
 - How strict the gratitude box is (today: at least 3 characters).
 - An undo for let go, restoring from the snapshot.
-- `transcribe` and `/demo/mcp` are open to anyone with the address.
+- `/demo/mcp` is open to anyone with the address.
 
 ## More from the brief and plan
 

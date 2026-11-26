@@ -1,7 +1,7 @@
 import type { ContactSource } from './contacts'
 import { BATCH_SIZE, MAX_GRATITUDE, MIN_GRATITUDE, type Batch, type Contact, type Decided, type Progress } from './contract'
 
-export type Decision = { kind: 'kept'; gratitude: string; spoken: boolean; at: string } | { kind: 'let_go'; at: string }
+export type Decision = { kind: 'kept'; gratitude: string; at: string } | { kind: 'let_go'; at: string }
 
 /** One person in the Brain: the contact as it was, and what was decided about them. */
 export interface BrainEntry {
@@ -75,13 +75,13 @@ export class Game {
     return contact
   }
 
-  async keep(id: string, gratitude: string, spoken = false): Promise<Decided> {
+  async keep(id: string, gratitude: string): Promise<Decided> {
     const state = await this.state()
     const contact = this.waiting(state, id)
     const text = gratitude.trim().replace(/\s+/g, ' ')
     if (text.length < MIN_GRATITUDE) throw new GameError(`Say what you're grateful to ${contact.name} for first.`)
     if (text.length > MAX_GRATITUDE) throw new GameError(`Keep it under ${MAX_GRATITUDE} characters.`)
-    state.brain[id] = { contact, decision: { kind: 'kept', gratitude: text, spoken, at: this.now().toISOString() } }
+    state.brain[id] = { contact, decision: { kind: 'kept', gratitude: text, at: this.now().toISOString() } }
     await this.store.save(state)
     return { id, decision: 'kept', progress: await this.count(state) }
   }
@@ -110,7 +110,7 @@ export function brainMarkdown(entries: BrainEntry[]): string {
   const person = ({ contact, decision }: BrainEntry) => [
     `### ${contact.name}`,
     '',
-    ...(decision.kind === 'kept' ? [`- Grateful for: ${decision.gratitude}${decision.spoken ? ' (spoken)' : ''}`] : []),
+    ...(decision.kind === 'kept' ? [`- Grateful for: ${decision.gratitude}`] : []),
     `- ${decision.kind === 'kept' ? 'Kept' : 'Let go'} on ${day(decision.at)}`,
     ...(contact.organisation ? [`- Organisation: ${contact.organisation}`] : []),
     ...(contact.emails.length ? [`- Email: ${contact.emails.join(', ')}`] : []),

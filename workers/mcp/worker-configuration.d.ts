@@ -3,7 +3,6 @@
 // Runtime types generated with workerd@1.20261123.1 2026-11-04 nodejs_compat
 interface __BaseEnv_Env {
 	OAUTH_KV: KVNamespace;
-	AI: Ai;
 	MCP_RESOURCE: "https://day19.40for40.workers.dev/mcp";
 	GOOGLE_CLIENT_ID: string;
 	GOOGLE_CLIENT_SECRET: string;

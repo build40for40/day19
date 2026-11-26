@@ -4,7 +4,5 @@ export const MCP_PATH = '/mcp'
 /** The same tools on made-up contacts, with no sign-in. Everyone shares one Brain here. */
 export const DEMO_MCP_PATH = '/demo/mcp'
 
-export const TRANSCRIBE_PATH = '/transcribe'
-
 /** The one shared Brain behind the demo endpoint. Signed-in people get a Brain named after their Google id. */
 export const DEMO_USER = 'demo'

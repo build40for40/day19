@@ -7,16 +7,13 @@ import { z } from 'zod'
 import widgetHtml from '../../dist/widget.html'
 import type { ContactRow, Outcome } from '../brain'
 import { TOOL, type Batch, type Decided } from '../contract'
-import { DEMO_USER, TRANSCRIBE_PATH } from '../env'
+import { DEMO_USER } from '../env'
 import { GoogleRevokedError, type GoogleProps } from '../google'
-import { hear } from '../hear'
 import * as schema from './schemas'
 import { BRAIN_TOOL, batchText, decidedText, LIST_TOOL, progressText, RESET_TOOL, SERVER_INSTRUCTIONS, SERVER_NAME, SYNC_TOOL, TEXT } from './text'
 
 // Chat apps cache the widget by its address, so the address changes whenever the built widget does.
 const WIDGET_URI = `ui://day19/contacts-${[...widgetHtml].reduce((hash, char) => (Math.imul(hash, 31) + char.charCodeAt(0)) >>> 0, 7).toString(36)}.html`
-
-const API_PLACEHOLDER = '__DAY19_TRANSCRIBE_URL__'
 
 const text = (value: string) => [{ type: 'text' as const, text: value }]
 
@@ -58,7 +55,7 @@ const listed = (c: ContactRow) => ({
 })
 
 /** A fresh server per request. All state lives in the person's Brain. */
-export function createServer(env: Env, session: Session, origin: string): McpServer {
+export function createServer(env: Env, session: Session): McpServer {
   const user = session.kind === 'google' ? session.google.userId : DEMO_USER
   // Signed-in Brains need the Google token for every call. The demo Brain needs none.
   const token = session.kind === 'google' ? session.google.accessToken : undefined
@@ -100,7 +97,7 @@ export function createServer(env: Env, session: Session, origin: string): McpSer
       outputSchema: schema.decided,
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     },
-    ({ id, gratitude, spoken }) => guarded(async () => decidedResult(await brain.keep(id, gratitude, spoken ?? false, token))),
+    ({ id, gratitude }) => guarded(async () => decidedResult(await brain.keep(id, gratitude, token))),
   )
 
   server.registerTool(
@@ -131,23 +128,6 @@ export function createServer(env: Env, session: Session, origin: string): McpSer
       }),
   )
 
-  // Hidden from the assistant: it is only for the widget's Speak button.
-  server.registerTool(
-    TOOL.transcribe,
-    {
-      title: TEXT.transcribe.title,
-      description: TEXT.transcribe.description,
-      inputSchema: schema.transcribeInput,
-      outputSchema: schema.heard,
-      annotations: { readOnlyHint: true, openWorldHint: false },
-      _meta: { ui: { visibility: ['app'] } },
-    },
-    async ({ audio }) => {
-      const result = await hear(env, audio)
-      return result.ok ? { content: text(result.value.text), structuredContent: { ...result.value } } : { content: text(result.error), isError: true }
-    },
-  )
-
   server.registerTool(
     BRAIN_TOOL,
     { title: TEXT.brain.title, description: TEXT.brain.description, inputSchema: schema.nothing, annotations: { readOnlyHint: true, openWorldHint: false } },
@@ -157,7 +137,7 @@ export function createServer(env: Env, session: Session, origin: string): McpSer
   if (session.kind === 'google') registerGoogleTools(server, brain, session.google.accessToken)
   else registerDemoTools(server, brain)
 
-  registerWidget(server, origin)
+  registerWidget(server)
   return server
 }
 
@@ -223,20 +203,17 @@ function registerDemoTools(server: McpServer, brain: DurableObjectStub<import('.
   )
 }
 
-function registerWidget(server: McpServer, origin: string) {
+function registerWidget(server: McpServer) {
   registerAppResource(server, TEXT.start.title, WIDGET_URI, { description: 'The keep or let go widget' }, async () => ({
     contents: [
       {
         uri: WIDGET_URI,
         mimeType: RESOURCE_MIME_TYPE,
-        // The widget is told where to send voice clips, and the chat app is asked to let it.
-        text: widgetHtml.replace(API_PLACEHOLDER, `${origin}${TRANSCRIBE_PATH}`),
+        text: widgetHtml,
         _meta: {
           ui: {
             // Contact photos come from Google's image host. Nothing else loads from outside the widget.
-            csp: { resourceDomains: ['https://lh3.googleusercontent.com'], connectDomains: [origin] },
-            // The mic is for speaking the gratitude. Hosts may refuse it, and the widget falls back to typing.
-            permissions: { microphone: {} },
+            csp: { resourceDomains: ['https://lh3.googleusercontent.com'] },
             prefersBorder: false,
           },
         },
@@ -247,7 +224,7 @@ function registerWidget(server: McpServer, origin: string) {
 
 /** Serves one MCP request at `route`, as the signed-in person or as the demo. */
 export function handleMcp(request: Request, env: Env, ctx: ExecutionContext, session: Session, route: string): Promise<Response> {
-  const handler = createMcpHandler(() => createServer(env, session, new URL(request.url).origin), {
+  const handler = createMcpHandler(() => createServer(env, session), {
     route,
     onerror: (error) => console.error('MCP request failed:', error.name),
   })
