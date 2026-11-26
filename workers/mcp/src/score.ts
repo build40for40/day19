@@ -12,10 +12,11 @@ export interface IndexedContact {
   displayName: string;
   /** Last time this contact was edited, ISO 8601. Oldest first is the "probably junk" end. */
   updatedAt: string;
-  email: string | null;
-  phone: string | null;
+  emails: string[];
+  phones: string[];
   photoUrl: string | null;
-  organisation: string | null;
+  /** "" when there's none, as in the shared contract. */
+  organisation: string;
   /** How likely it is that this person matters to the user. Higher means more likely. */
   score: number;
   /** Why it scored that, so Claude can say "you starred them" and the team can tune it. */
@@ -75,10 +76,10 @@ export function indexContact(person: Person, userFamilyName: string): IndexedCon
     etag: person.etag,
     displayName: name,
     updatedAt: lastUpdated(person),
-    email: person.emailAddresses?.[0]?.value ?? null,
-    phone: person.phoneNumbers?.[0]?.value ?? null,
+    emails: (person.emailAddresses ?? []).map((e) => e.value),
+    phones: (person.phoneNumbers ?? []).map((p) => p.value),
     photoUrl: person.photos?.find((p) => !p.default)?.url ?? null,
-    organisation: person.organizations?.[0]?.name ?? null,
+    organisation: person.organizations?.[0]?.name ?? "",
     score,
     signals,
   };

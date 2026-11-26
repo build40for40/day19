@@ -1,14 +1,22 @@
 {
   "compilerOptions": {
     "target": "es2024",
-    "lib": ["es2024"],
+    "lib": [
+      "es2024"
+    ],
     "module": "preserve",
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "strict": true,
     "noEmit": true,
     "skipLibCheck": true,
-    "types": ["@cloudflare/vitest-plugin/types"]
+    "types": [
+      "@cloudflare/vitest-plugin/types"
+    ],
+    "noUncheckedIndexedAccess": true
   },
-  "include": ["src", "worker-configuration.d.ts"]
+  "include": [
+    "src",
+    "worker-configuration.d.ts"
+  ]
 }

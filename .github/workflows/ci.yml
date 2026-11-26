@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: build40for40/actions/setup@v1
+      # Builds the widget, then typechecks the Worker and the widget.
+      - run: pnpm --filter @day19/mcp build
+      - run: pnpm test
+
+  deploy:
+    needs: check
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: deploy
+      cancel-in-progress: false
+    env:
+      GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+      GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+    steps:
+      - uses: build40for40/actions/setup@v1
+        id: setup
+      # The Worker bundles dist/widget.html, so it has to exist before the deploy.
+      - run: pnpm --filter @day19/mcp build:widget
+      - uses: build40for40/actions/deploy-worker@v1
+        with:
+          api-token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          working-directory: workers/mcp
+          package-manager: ${{ steps.setup.outputs.package-manager }}
+          secrets: |
+            GOOGLE_CLIENT_ID
+            GOOGLE_CLIENT_SECRET

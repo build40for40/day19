@@ -1,16 +1,20 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "day19-mcp",
+  "name": "day19",
   "account_id": "9b4d3e616e55585a0ae844f424717b43",
   "compatibility_date": "2026-11-04",
   // agents/mcp/server uses AsyncLocalStorage.
   "compatibility_flags": ["nodejs_compat"],
   "main": "src/index.ts",
+  // The widget is one built HTML file (dist/widget.html), bundled into the Worker as text.
+  "rules": [{ "type": "Text", "globs": ["**/*.html"], "fallthrough": true }],
+  // Speech to text for the widget's Speak button.
+  "ai": { "binding": "AI" },
 
   // The URL MCP clients connect to. Every token is bound to it.
   // Local dev overrides it in .dev.vars with http://localhost:8788/mcp.
   "vars": {
-    "MCP_RESOURCE": "https://day19-mcp.40for40.workers.dev/mcp"
+    "MCP_RESOURCE": "https://day19.40for40.workers.dev/mcp"
   },
   "secrets": {
     "required": ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"]
@@ -20,9 +24,9 @@
   // Wrangler creates the namespace on first deploy.
   "kv_namespaces": [{ "binding": "OAUTH_KV" }],
 
-  // The brain: one Durable Object per Google account.
+  // The Brain: one Durable Object per Google account, plus one shared by the demo.
   "durable_objects": {
-    "bindings": [{ "name": "BRAIN", "class_name": "Brain" }]
+    "bindings": [{ "name": "BRAINS", "class_name": "Brain" }]
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Brain"] }],
 
@@ -31,6 +35,6 @@
 
   // Served on workers.dev until the app has a name and its own subdomain.
   "workers_dev": true,
-  "preview_urls": false,
+  "preview_urls": true,
   "observability": { "enabled": true }
 }

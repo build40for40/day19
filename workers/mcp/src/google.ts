@@ -206,3 +206,14 @@ export async function getPeople(accessToken: string, resourceNames: string[]): P
   const json = (await response.json()) as { responses?: { person?: Person }[] };
   return (json.responses ?? []).flatMap((r) => (r.person ? [r.person] : []));
 }
+
+/** Deletes a contact from Google, and so from every phone synced to that account. Already gone counts as done. */
+export async function deleteContact(accessToken: string, resourceName: string): Promise<void> {
+  const response = await fetch(`${PEOPLE_URL}/${resourceName}:deleteContact`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (response.ok || response.status === 404) return;
+  if (response.status === 401) throw new GoogleRevokedError(await response.text());
+  throw new Error(`People API deleteContact said ${response.status}`);
+}

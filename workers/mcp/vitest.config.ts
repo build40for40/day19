@@ -5,6 +5,8 @@ export default defineConfig({
   plugins: [
     cloudflareTest({
       wrangler: { configPath: "./wrangler.jsonc" },
+      // Tests never reach Cloudflare: the AI binding stays unconnected, so CI needs no login.
+      remoteBindings: false,
       miniflare: {
         bindings: {
           GOOGLE_CLIENT_ID: "fake-client-id",

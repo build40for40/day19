@@ -140,7 +140,7 @@ export const authHandler = {
         };
 
         // Fill the brain while the user heads back to Claude, so the first tool call is quick.
-        const brain = env.BRAIN.get(env.BRAIN.idFromName(user.sub));
+        const brain = env.BRAINS.get(env.BRAINS.idFromName(user.sub));
         await brain.setProfile({ userId: user.sub, email: user.email, familyName: props.familyName });
         ctx.waitUntil(brain.sync(tokens.access_token, { force: true }).then(() => undefined, (e) => console.error("first sync failed", e)));
 

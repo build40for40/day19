@@ -6,8 +6,8 @@ Day 19 of [40 for 40](https://build40for40.com): a Claude and ChatGPT plugin tha
 
 | Folder | What it is |
 | --- | --- |
-| `workers/mcp` | The MCP server on Cloudflare Workers: Google sign-in, the contacts brain, and the tools |
-| `apps/` | Coming: the landing page and the keep or let go widget |
+| `workers/mcp` | The one Worker: the MCP server and its keep or let go widget, Google sign-in, and each person's Brain |
+| `apps/` | Coming: the landing page |
 
 ## Run it on your laptop
 
@@ -33,15 +33,29 @@ You need Node 24 and pnpm (`npm install -g pnpm`, or `npx pnpm@12.6.0` for each 
    pnpm dev
    ```
 
-4. Connect with MCP Inspector, point it at `http://localhost:8788/mcp`, sign in with Google and run `progress` or `next_contacts`:
+4. Connect with MCP Inspector, point it at `http://localhost:8788/mcp`, sign in with Google and run `start_game` or `list_contacts`:
 
    ```bash
    npx @modelcontextprotocol/inspector
    ```
 
+### No Google client yet?
+
+The demo needs no sign-in. With `pnpm dev` running, point MCP Inspector at `http://localhost:8788/demo/mcp`, or run the local stand-in for Claude, which shows the widget:
+
+```bash
+pnpm --filter @day19/mcp host
+```
+
+Or play the widget on its own in a browser tab, with no server at all:
+
+```bash
+pnpm --filter @day19/mcp widget
+```
+
 ## Deploy
 
-The first deploy creates the KV namespace for sign-in state. Set the two Google secrets once, then deploy:
+Merging to `main` deploys through CI, once the repo has the `CLOUDFLARE_API_TOKEN`, `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` secrets. To deploy by hand instead: the first deploy creates the KV namespace for sign-in state, so set the two Google secrets once, then deploy:
 
 ```bash
 pnpm --filter @day19/mcp wrangler secret put GOOGLE_CLIENT_ID
@@ -55,7 +69,7 @@ pnpm --filter @day19/mcp wrangler secret put GOOGLE_CLIENT_SECRET
 pnpm --filter @day19/mcp deploy
 ```
 
-Then add `https://day19-mcp.40for40.workers.dev/callback` to the Google client's redirect URIs, and `https://day19-mcp.40for40.workers.dev/mcp` as a custom connector in Claude or ChatGPT.
+Then add `https://day19.40for40.workers.dev/callback` to the Google client's redirect URIs, and `https://day19.40for40.workers.dev/mcp` as a custom connector in Claude or ChatGPT. `https://day19.40for40.workers.dev/demo/mcp` is the demo, with no sign-in.
 
 ## Checks
 

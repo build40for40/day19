@@ -1,0 +1,23 @@
+{
+  "include": [
+    "src",
+    "../dev"
+  ],
+  "compilerOptions": {
+    "target": "es2024",
+    "lib": [
+      "es2024",
+      "dom",
+      "dom.iterable"
+    ],
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "types": [
+      "vite/client"
+    ],
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "skipLibCheck": true,
+    "noEmit": true
+  }
+}
