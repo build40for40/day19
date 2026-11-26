@@ -1,5 +1,5 @@
 import { registerAppResource, registerAppTool, RESOURCE_MIME_TYPE } from '@modelcontextprotocol/ext-apps/server'
-import { McpServer } from '@modelcontextprotocol/server'
+import { McpServer, ResourceTemplate } from '@modelcontextprotocol/server'
 import { createMcpHandler } from 'agents/mcp/server'
 
 import { z } from 'zod'
@@ -14,6 +14,9 @@ import { BRAIN_TOOL, batchText, decidedText, LIST_TOOL, progressText, RESET_TOOL
 
 // Chat apps cache the widget by its address, so the address changes whenever the built widget does.
 const WIDGET_URI = `ui://gobbler/contacts-${[...widgetHtml].reduce((hash, char) => (Math.imul(hash, 31) + char.charCodeAt(0)) >>> 0, 7).toString(36)}.html`
+
+// A chat that listed the tools before a deploy still asks for the address it was given then.
+const OLD_WIDGET_URIS = 'ui://gobbler/contacts-{build}.html'
 
 const text = (value: string) => [{ type: 'text' as const, text: value }]
 
@@ -240,10 +243,10 @@ function registerDemoTools(server: McpServer, brain: DurableObjectStub<import('.
 }
 
 function registerWidget(server: McpServer) {
-  registerAppResource(server, TEXT.start.title, WIDGET_URI, { description: 'The keep or let go widget' }, async () => ({
+  const widget = (uri: string) => ({
     contents: [
       {
-        uri: WIDGET_URI,
+        uri,
         mimeType: RESOURCE_MIME_TYPE,
         text: widgetHtml,
         _meta: {
@@ -255,7 +258,16 @@ function registerWidget(server: McpServer) {
         },
       },
     ],
-  }))
+  })
+  registerAppResource(server, TEXT.start.title, WIDGET_URI, { description: 'The keep or let go widget' }, async () => widget(WIDGET_URI))
+  // Any earlier build's address gets today's widget, so a deploy never leaves an open chat with a blank one.
+  // It has no list callback, so only the current address is ever listed.
+  server.registerResource(
+    'earlier-widget-builds',
+    new ResourceTemplate(OLD_WIDGET_URIS, { list: undefined }),
+    { description: 'The keep or let go widget, at the address an earlier build gave it', mimeType: RESOURCE_MIME_TYPE },
+    async (uri) => widget(uri.href),
+  )
 }
 
 /** Serves one MCP request at `route`, as the signed-in person or as the demo. */
