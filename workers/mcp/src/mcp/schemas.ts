@@ -16,7 +16,13 @@ export const contact = z.object({
 
 export const progress = z.object({ decided: z.number().int(), total: z.number().int() }) satisfies z.ZodType<Progress>
 
-export const batch = z.object({ contacts: z.array(contact), progress, doneForToday: z.boolean() }) satisfies z.ZodType<Batch>
+export const batch = z.object({
+  contacts: z.array(contact),
+  progress,
+  doneForToday: z.boolean(),
+  thankAgain: z.number().int().optional(),
+  thankedBefore: z.record(z.string(), z.object({ gratitude: z.string(), at: z.string() })).optional(),
+}) satisfies z.ZodType<Batch>
 
 export const decided = z.object({
   id: z.string(),

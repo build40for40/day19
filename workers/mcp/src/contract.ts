@@ -21,11 +21,15 @@ export interface Progress {
 
 /** What `start_game` and `next_contacts` return. */
 export interface Batch {
-  /** Up to `limit` contacts nobody has decided on yet, A to Z. */
+  /** Up to `limit` of today's contacts still to decide: new ones first, then kept people back for fresh thanks. */
   contacts: Contact[]
   progress: Progress
-  /** True once today's contacts are all decided. The next ones come tomorrow. */
+  /** True once today's contacts are all decided. The next ones come tomorrow, or now with `more`. */
   doneForToday: boolean
+  /** How many kept people could be thanked again right now with `more`, even with nobody new left to sort. */
+  thankAgain?: number
+  /** For contacts in this batch who were kept before: what they were last thanked for, and when. */
+  thankedBefore?: Record<string, { gratitude: string; at: string }>
 }
 
 /**
