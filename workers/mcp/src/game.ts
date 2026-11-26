@@ -15,9 +15,6 @@ export interface BrainEntry {
   earlier?: { gratitude: string; at: string }[]
 }
 
-/** How long after being thanked a kept person comes back into a day's hand for fresh thanks. */
-export const THANK_AGAIN_DAYS = 30
-const THANK_AGAIN_MS = THANK_AGAIN_DAYS * 24 * 60 * 60 * 1000
 
 export interface GameState {
   /** The UK date today's contacts were picked for, as YYYY-MM-DD. */
@@ -57,29 +54,23 @@ export class Game {
     // A hand that started short (a new account, or contacts added during the day) is filled back up to five.
     if (state.date === date) return state.today.length < BATCH_SIZE ? this.deal(state, BATCH_SIZE - state.today.length) : state
     // A new day: the next five nobody has decided on yet, picked by `pick` (A to Z unless told otherwise),
-    // topped up with kept people due fresh thanks.
+    // then kept people back for fresh thanks, longest-ago thanks first.
     const next = { ...state, date, today: [] as Contact[] }
-    next.today = this.candidates(next, await this.source.list(), false).slice(0, BATCH_SIZE)
+    next.today = this.candidates(next, await this.source.list()).slice(0, BATCH_SIZE)
     await this.store.save(next)
     return next
   }
 
   /**
    * Who could go into today's hand, best first: everyone nobody has decided on yet, picked by `pick`, then kept
-   * people whose last thanks is oldest. Kept people count once their thanks is THANK_AGAIN_DAYS old, or, with
-   * `anyKept` (asking for more after the list is clean), as long as they weren't thanked today. Never anyone let
-   * go, and never anyone already in today's hand.
+   * people whose last thanks is oldest. Friendship doesn't lapse: a kept person can be thanked again any day
+   * after the one they were last thanked on. Never anyone let go, and never anyone already in today's hand.
    */
-  private candidates(state: GameState, contacts: Contact[], anyKept: boolean): Contact[] {
+  private candidates(state: GameState, contacts: Contact[]): Contact[] {
     const inHand = new Set(state.today.map((contact) => contact.id))
-    const now = this.now().getTime()
     const fresh = contacts.filter((contact) => !state.brain[contact.id] && !inHand.has(contact.id))
     const due = contacts
-      .filter((contact) => {
-        const decision = state.brain[contact.id]?.decision
-        if (decision?.kind !== 'kept' || inHand.has(contact.id) || this.decidedToday(state, contact.id)) return false
-        return anyKept || now - Date.parse(decision.at) >= THANK_AGAIN_MS
-      })
+      .filter((contact) => state.brain[contact.id]?.decision.kind === 'kept' && !inHand.has(contact.id) && !this.decidedToday(state, contact.id))
       .toSorted((a, b) => state.brain[a.id]!.decision.at.localeCompare(state.brain[b.id]!.decision.at) || a.name.localeCompare(b.name, 'en'))
     return [...this.pick(fresh), ...due]
   }
@@ -97,10 +88,8 @@ export class Game {
   }
 
   /** Adds up to `count` more contacts to today's hand. Everyone already in it stays, decided or not. */
-  private async deal(state: GameState, count: number, anyKept = false): Promise<GameState> {
-    const spare = this.candidates(state, await this.source.list(), false)
-    // A clean list can still go again: kept people come back for fresh thanks, as long as it isn't the same day.
-    const pool = spare.length || !anyKept ? spare : this.candidates(state, await this.source.list(), true)
+  private async deal(state: GameState, count: number): Promise<GameState> {
+    const pool = this.candidates(state, await this.source.list())
     if (!pool.length) return state
     const next = { ...state, today: [...state.today, ...pool.slice(0, count)] }
     await this.store.save(next)
@@ -109,7 +98,7 @@ export class Game {
 
   /** Kept people who could be thanked again right now, for the widget's "thank more" button. */
   private async thankable(state: GameState): Promise<number> {
-    return this.candidates(state, await this.source.list(), true).filter((contact) => state.brain[contact.id]?.decision.kind === 'kept').length
+    return this.candidates(state, await this.source.list()).filter((contact) => state.brain[contact.id]?.decision.kind === 'kept').length
   }
 
   private async count(state: GameState): Promise<Progress> {
@@ -124,7 +113,7 @@ export class Game {
   async next(limit = BATCH_SIZE, more = false): Promise<Batch> {
     let state = await this.state()
     const left = (from: GameState) => from.today.filter((contact) => this.isWaiting(from, contact.id))
-    if (more && left(state).length === 0) state = await this.deal(state, BATCH_SIZE, true)
+    if (more && left(state).length === 0) state = await this.deal(state, BATCH_SIZE)
     const waiting = left(state).slice(0, limit)
     const thankedBefore = Object.fromEntries(
       waiting.flatMap((contact) => {

@@ -87,7 +87,8 @@ describe('Game', () => {
     expect(await game.next()).toEqual({ contacts: [], progress: { decided: 5, total: 8 }, doneForToday: true, thankAgain: 0 })
     setNow('2026-11-27T09:00:00Z')
     const day2 = await game.next()
-    expect(initials(day2.contacts)).toEqual(['X', 'Y', 'Z'])
+    // The three nobody has sorted come first, then the hand fills up with people kept yesterday, back for fresh thanks.
+    expect(initials(day2.contacts)).toEqual(['X', 'Y', 'Z', 'S', 'T'])
     expect(day2.doneForToday).toBe(false)
   })
 
@@ -137,24 +138,20 @@ describe('Game', () => {
     expect(await game.next(undefined, true)).toMatchObject({ contacts: [], doneForToday: true, progress: { decided: 12, total: 12 } })
   })
 
-  it('brings kept people back round for fresh thanks a month later, oldest thanks first, never anyone let go', async () => {
+  it('brings kept people back round the next day for fresh thanks, oldest thanks first, never anyone let go', async () => {
     const { game, setNow } = setup(3)
     const [a, b, c] = (await game.next()).contacts
     await game.keep(a!.id, 'first thanks to a')
     setNow('2026-11-26T11:00:00Z')
     await game.keep(b!.id, 'first thanks to b')
     await game.letGo(c!.id)
-    // The next day the list is clean, and nobody is due yet.
+    // The same day, nobody comes back: they were all just thanked.
+    expect((await game.next(5, true)).contacts).toEqual([])
+    // The next day both kept people are back, oldest thanks first, with what they were thanked for last time.
     setNow('2026-11-27T10:00:00Z')
     const tomorrow = await game.next()
-    expect(tomorrow.contacts).toEqual([])
-    expect(tomorrow.doneForToday).toBe(true)
-    expect(tomorrow.thankAgain).toBe(2)
-    // A month on, both kept people are back, oldest thanks first, with what they were thanked for last time.
-    setNow('2026-12-27T10:00:00Z')
-    const later = await game.next()
-    expect(later.contacts.map((x) => x.id)).toEqual([a!.id, b!.id])
-    expect(later.thankedBefore?.[a!.id]?.gratitude).toBe('first thanks to a')
+    expect(tomorrow.contacts.map((x) => x.id)).toEqual([a!.id, b!.id])
+    expect(tomorrow.thankedBefore?.[a!.id]?.gratitude).toBe('first thanks to a')
     // Thanking again saves the new words, keeps the old ones, and counts as decided for today.
     await game.keep(a!.id, 'second thanks to a')
     await expect(game.keep(a!.id, 'third thanks to a')).rejects.toThrow(GameError)
@@ -173,19 +170,21 @@ describe('Game', () => {
     const same = await game.next(5, true)
     expect(same.contacts).toEqual([])
     expect(same.thankAgain).toBe(0)
-    // The next day, asking for more brings them straight back without waiting a month.
+    // The next day they're back in the hand, and once they're thanked, asking for more finds nobody else today.
     setNow('2026-11-27T10:00:00Z')
-    expect((await game.next()).contacts).toEqual([])
-    const again = await game.next(5, true)
+    const again = await game.next()
     expect(again.contacts.map((x) => x.id)).toEqual([a!.id, b!.id])
     expect(again.doneForToday).toBe(false)
+    await game.keep(a!.id, 'more thanks to a')
+    await game.keep(b!.id, 'more thanks to b')
+    expect((await game.next(5, true)).contacts).toEqual([])
   })
 
   it('deals new contacts before kept people who are due', async () => {
     const { game, setNow, grow } = setup(1)
     const [a] = (await game.next()).contacts
     await game.keep(a!.id, 'thanks to a')
-    setNow('2026-12-27T10:00:00Z')
+    setNow('2026-11-27T10:00:00Z')
     grow(2)
     const hand = (await game.next()).contacts.map((x) => x.id)
     expect(hand).toEqual(['c1', a!.id])

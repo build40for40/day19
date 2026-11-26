@@ -49,10 +49,10 @@ When a round of five is done, or whenever the person asks, the assistant calls `
 
 ### Kept people come back round
 
-A clean list isn't the end, because one thank-you shouldn't be the last. Someone kept comes back into a day's hand for fresh thanks `THANK_AGAIN_DAYS` (30) after they were last thanked, oldest thanks first, after anyone not yet sorted (`src/game.ts` `candidates`). With a clean list, `next_contacts` with `more` brings kept people back straight away, skipping anyone decided today, so the person can always keep going. Nobody let go ever comes back.
+A clean list isn't the end, because one thank-you shouldn't be the last. Friendship doesn't lapse: someone kept can come back into a day's hand for fresh thanks any day after the one they were last thanked on, oldest thanks first, after anyone not yet sorted (`src/game.ts` `candidates`). `next_contacts` with `more` deals them too, skipping anyone decided today, so the person can always keep going. Nobody let go ever comes back.
 
 - Keeping someone again saves the new gratitude and moves the old one into `earlier` on their Brain entry, which the Brain's markdown lists. Signed in, it also saves a new Gmail draft.
-- A returning person counts as waiting until they're decided again today. Their `id` stays the same, so the contract doesn't change, but `Batch` gains `thankedBefore` (what they were last thanked for, and when) and `thankAgain` (how many kept people `more` could bring back now).
+- A returning person counts as waiting until they're decided again today. Nobody comes back the same day they were decided. Their `id` stays the same, so the contract doesn't change, but `Batch` gains `thankedBefore` (what they were last thanked for, and when) and `thankAgain` (how many kept people `more` could bring back now).
 - The widget shows "Back for more thanks. On 3 Dec you said: …" on a returning card, and once nobody is left to sort, a "Thank five more" button when `thankAgain` is above zero.
 
 ### Thank-you drafts on every keep

@@ -28,7 +28,7 @@ Starting the game: the person's way in is "Let's Gobble". Call ${TOOL.start} str
 - Only call ${TOOL.letGo} when the person clearly says to let go of or delete that contact. It deletes the contact from their contacts list and from any phone synced to it. A copy stays in the Brain.
 - After deciding in the chat, call ${TOOL.start} again if they want to see where they are.
 - Five a day is the habit, not a limit. When today's are done and the person asks for more ("five more", "keep going"), call ${TOOL.next} with more set to true, then ${TOOL.start}. Don't deal more unless they ask.
-- A clean list isn't the end. People who were kept come back round for fresh thanks: on their own about a month after they were last thanked, or straight away when the person asks for more. Keeping them again saves new thanks (and, signed in, a new Gmail draft). Earlier thanks stay in the Brain. Never reuse last time's words for them.
+- A clean list isn't the end. People who were kept come back round for fresh thanks, any day after the one they were last thanked on, once nobody new is left to sort. Keeping them again saves new thanks (and, signed in, a new Gmail draft). Earlier thanks stay in the Brain. Never reuse last time's words for them.
 - This server never sends anything to the contacts themselves.
 
 Thank-you emails. Signed in with Google, Gobbler saves one in Gmail drafts for each person as they're kept, and every ${TOOL.keep} result says whether it did. So don't write them yourself just because a round ended. Write them only when the person asks ("draft thank-yous", "rewrite the one to Jeff", "email the people I kept"), or in the demo, where nobody is signed in. Drafts are never sent, so there's nothing to confirm:
@@ -108,7 +108,7 @@ export function batchText(batch: Batch): string {
       ? ` More tomorrow, or if they ask to keep going, call ${TOOL.next} with more set to true and then ${TOOL.start} to show them.`
       : batch.thankAgain
         ? ` Everyone is sorted, but ${batch.thankAgain} kept ${batch.thankAgain === 1 ? 'person' : 'people'} can be thanked again. If they want to keep going, call ${TOOL.next} with more set to true and then ${TOOL.start}.`
-        : ' Everyone is sorted and thanked for today. Kept people come back round for fresh thanks later.'
+        : ' Everyone is sorted and thanked for today. Kept people come back round tomorrow for fresh thanks.'
     return `That's today's contacts done.${more} ${progressText(progress)}`
   }
   const lines = contacts.map((contact) => {
