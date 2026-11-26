@@ -8,11 +8,19 @@ export const THANKS_PS =
   "P.S. I'm finally clearing out my contacts with Gobbler, a Claude and ChatGPT plugin. Every day it shows me five people, and to keep one I have to say why. I kept you. Clean up yours at build40for40.com/gobbler"
 
 
+/** How to turn kept contacts into thank-you drafts. In the server instructions, and in every thank_you_notes result, since some chat apps don't show the model server instructions. */
+export const THANKS_BRIEF = `- Call ${THANKS_TOOL} for everyone kept, or with an id for one person. It returns each name, email and gratitude, and repeats these rules.
+- Write one short email each, turning the gratitude into a simple, coherent thank-you: one to three plain sentences, warm and natural, in the first person, as if the person wrote it. Rephrase rough notes into proper sentences ("mah jong" becomes "teaching me mah jong"), but add no facts, memories or feelings they didn't give.
+- Give each one a short subject line, like "Thank you" or "A quick thank you".
+- End each email with this P.S., exactly as written, on its own line after the sign-off: "${THANKS_PS}" Leave it out only if the person asks. Tell them once that it's there and they can drop it.
+- If an email tool such as Gmail is connected, save each one as a draft addressed to the contact. Never send it: the person reviews and sends it themselves. Without an email tool, show the drafts in the chat with a mailto link for each contact that has an email address.
+- Skip anyone with no email address, and say who was skipped.`
+
 export const SERVER_INSTRUCTIONS = `This is Gobbler, a daily gratitude game for the person's contacts list. Each day it surfaces ${BATCH_SIZE} contacts. Each one is either let go, or kept by saying what the person is grateful to them for. Everything is saved to the person's Brain, a markdown file, so nobody is ever lost.
 
-Gobbler is not an inbox, email or calendar cleaner, and it never deletes in bulk.
+Gobbler is not an inbox, email or calendar cleaner, and it never deletes in bulk. It does draft thank-you emails to the people the person kept, when they ask (below).
 
-Starting the game: the person's way in is "Let's Gobble". Call ${TOOL.start} straight away for that and anything like it, typos included: "lets gobble", "let gobble", "lets gobbel", "lets gobbler", "I'd like to gobble now", "gobble my contacts", "time to gobble", "play Gobbler", "open Gobbler". Also call it when they ask to clean up, sort or thank the people in their contacts while Gobbler is connected. Don't ask them to confirm first.
+Starting the game: the person's way in is "Let's Gobble". Call ${TOOL.start} straight away for that and anything like it, typos included: "lets gobble", "let gobble", "lets gobbel", "lets gobbler", "I'd like to gobble now", "gobble my contacts", "time to gobble", "play Gobbler", "open Gobbler". Also call it when they ask to clean up or sort the people in their contacts while Gobbler is connected. Asking for thank-you emails to people already kept is different: that's ${THANKS_TOOL}. Don't ask them to confirm first.
 
 - Start with ${TOOL.start}. It shows a widget where the person decides by tapping and typing, so don't repeat the contacts in your reply.
 - The person can also decide by telling you in the chat. When they say they want to keep someone and why, call ${TOOL.keep} with their own words as the gratitude, tidied only for filler and false starts.
@@ -22,18 +30,13 @@ Starting the game: the person's way in is "Let's Gobble". Call ${TOOL.start} str
 - Five a day is the habit, not a limit. When today's are done and the person asks for more ("five more", "keep going"), call ${TOOL.next} with more set to true, then ${TOOL.start}. Don't deal more unless they ask.
 - This server never sends anything to the contacts themselves.
 
-Thank-you emails, only when the person asks for them ("draft thank-yous", "write to Jeff"):
-- Call ${THANKS_TOOL} for everyone kept, or with an id for one person. It returns each name, email and gratitude.
-- Write one short email each, turning the gratitude into a simple, coherent thank-you: one to three plain sentences, warm and natural, in the first person, as if the person wrote it. Rephrase rough notes into proper sentences ("mah jong" becomes "teaching me mah jong"), but add no facts, memories or feelings they didn't give.
-- Give each one a short subject line, like "Thank you" or "A quick thank you".
-- End each email with this P.S., exactly as written, on its own line after the sign-off: "${THANKS_PS}" Leave it out only if the person asks. Tell them once that it's there and they can drop it.
-- If an email tool such as Gmail is connected, save each one as a draft addressed to the contact. Never send it: the person reviews and sends it themselves. Without an email tool, show the drafts in the chat with a mailto link for each contact that has an email address.
-- Skip anyone with no email address, and say who was skipped.`
+Thank-you emails, only when the person asks for them ("draft thank-yous", "write to Jeff", "email the people I kept"):
+${THANKS_BRIEF}`
 
 export const TEXT = {
   start: {
     title: "Gobbler: today's five",
-    description: `Starts Gobbler, the daily gratitude game: opens the keep or let go widget with today's ${BATCH_SIZE} contacts. Call this when the person says "Let's Gobble" or anything like it, typos included ("lets gobble", "lets gobbel", "lets gobbler", "I'd like to gobble now", "gobble my contacts", "play Gobbler"), or asks to clean up, sort or thank the people in their contacts. Also call it to show what is left today. Not for email or inbox clean-ups.`,
+    description: `Starts Gobbler, the daily gratitude game: opens the keep or let go widget with today's ${BATCH_SIZE} contacts. Call this when the person says "Let's Gobble" or anything like it, typos included ("lets gobble", "lets gobbel", "lets gobbler", "I'd like to gobble now", "gobble my contacts", "play Gobbler"), or asks to clean up or sort the people in their contacts. Also call it to show what is left today. Not for email or inbox clean-ups, and not for thank-you emails (that's ${THANKS_TOOL}).`,
   },
   next: {
     title: 'Next contacts',
@@ -63,7 +66,7 @@ export const TEXT = {
   thanks: {
     title: 'Thank-you notes',
     description:
-      "Returns everyone the person kept, newest first, with their email addresses and what the person is grateful to them for, so you can draft thank-you emails. Only call it when the person asks for thank-you emails. It doesn't write or send anything.",
+      "Call this when the person asks to draft, write or send thank-you emails or notes to the people they kept in Gobbler. Returns everyone kept, newest first, with their email addresses and what the person is grateful to them for, plus the rules for writing the drafts. Then write each email and save it as a draft with the person's email tool (such as Gmail). Never send it.",
     id: 'Only this contact. Leave it out for everyone kept.',
   },
   reset: {
