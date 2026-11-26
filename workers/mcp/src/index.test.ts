@@ -51,6 +51,13 @@ describe("worker", () => {
     expect(notes.result.content[0].text).toContain("I kept you.");
     const again = await json(await rpc("tools/call", { name: "thank_you_notes", arguments: {} }, 21));
     expect(again.result.structuredContent.notes).toHaveLength(0);
+
+    // Starting today over puts the same five back, undecided.
+    expect(names).toContain("start_over_today");
+    const over = await json(await rpc("tools/call", { name: "start_over_today", arguments: {} }, 30));
+    expect(over.result.content[0].text).toContain("5 kept contacts are undecided again");
+    expect(over.result.structuredContent.contacts.map((c: { id: string }) => c.id)).toEqual(five.map((c) => c.id));
+    expect(over.result.structuredContent.progress.decided).toBe(0);
   });
 
   it("serves a plain home page and 404s the rest", async () => {

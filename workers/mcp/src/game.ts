@@ -115,6 +115,27 @@ export class Game {
     return { id, decision: 'let_go', progress: await this.count(state) }
   }
 
+  /**
+   * Starts today over: every decision made today (UK time) is undone, and the day's first five are waiting again.
+   * Gratitude written today is dropped, and anyone let go today goes back into the contacts list.
+   * Earlier days are never touched.
+   */
+  async startOver(): Promise<{ batch: Batch; undone: BrainEntry[] }> {
+    const state = await this.state()
+    const undone = Object.values(state.brain).filter((entry) => ukDate(new Date(entry.decision.at)) === state.date)
+    for (const { contact, decision } of undone) {
+      // Back in the contacts list before they leave the Brain, and saved one at a time, so stopping part way never loses anyone.
+      const back = decision.kind === 'let_go' ? await this.source.restore(contact) : contact
+      delete state.brain[contact.id]
+      state.today = state.today.map((dealt) => (dealt.id === contact.id ? back : dealt))
+      await this.store.save(state)
+    }
+    // Any extra rounds asked for go back in the pile.
+    state.today = state.today.slice(0, BATCH_SIZE)
+    await this.store.save(state)
+    return { batch: await this.next(), undone }
+  }
+
   async brain(): Promise<string> {
     return brainMarkdown(Object.values((await this.state()).brain))
   }

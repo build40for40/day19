@@ -41,7 +41,11 @@ What the widget relies on, beyond the names:
 - **Text for the assistant**: every result also has a `content` text version of the same data, because the assistant reads that and the widget reads `structuredContent`.
 - Deciding the same contact twice is an error. The widget then calls `next_contacts` and skips anyone already decided, which is how a contact kept by telling the assistant drops out of the widget.
 
-Extra tools sit outside the contract: `read_brain` (the Brain as markdown), `reset_demo` (demo endpoint only, puts the made-up contacts back), `thank_you_notes`, and `sync_contacts` and `list_contacts` (signed in only).
+Extra tools sit outside the contract: `read_brain` (the Brain as markdown), `start_over_today` (below), `reset_demo` (demo endpoint only, puts the made-up contacts back), `thank_you_notes`, and `sync_contacts` and `list_contacts` (signed in only).
+
+### Starting today over
+
+`start_over_today` undoes every decision made today (UK time) and puts the day's first five back, undecided. It has no button in the widget on purpose: the person has to ask the assistant ("start over today", "reset for today"), and it's marked destructive so chat apps confirm first. Gratitude written today is erased. Anyone let go today is created again in Google Contacts from the snapshot taken before the delete (`createContact` in `src/google.ts`), so they come back with a new id and without their photo. Earlier days are never touched, and thank-you drafts already saved to Gmail stay there. The rule lives in `Game.startOver` in `src/game.ts`.
 
 ### Thank-you emails
 

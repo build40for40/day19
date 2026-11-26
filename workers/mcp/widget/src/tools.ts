@@ -37,7 +37,7 @@ export function mcpTools(app: App): Tools {
 export function fakeTools(): Tools {
   let contacts = DEMO_CONTACTS
   let state: GameState | undefined
-  const source: ContactSource = { list: async () => contacts, remove: async (id) => void (contacts = contacts.filter((c) => c.id !== id)) }
+  const source: ContactSource = { list: async () => contacts, remove: async (id) => void (contacts = contacts.filter((c) => c.id !== id)), restore: async (contact) => (contacts = [...contacts, contact], contact) }
   const store: StateStore = { load: async () => structuredClone(state), save: async (next) => void (state = structuredClone(next)) }
   const game = new Game(source, store)
   return { next: () => game.next(), more: () => game.next(undefined, true), keep: (id, gratitude) => game.keep(id, gratitude), letGo: (id) => game.letGo(id) }

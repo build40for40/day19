@@ -139,7 +139,7 @@ export interface Person {
     deleted?: boolean;
     sources?: { type: string; updateTime?: string }[];
   };
-  names?: { displayName?: string; givenName?: string; familyName?: string }[];
+  names?: { displayName?: string; givenName?: string; familyName?: string; unstructuredName?: string }[];
   emailAddresses?: { value: string }[];
   phoneNumbers?: { value: string }[];
   photos?: { url: string; default?: boolean }[];
@@ -216,4 +216,38 @@ export async function deleteContact(accessToken: string, resourceName: string): 
   if (response.ok || response.status === 404) return;
   if (response.status === 401) throw new GoogleRevokedError(await response.text());
   throw new Error(`People API deleteContact said ${response.status}`);
+}
+
+/** What a snapshot can be written back with. Photos and metadata are Google's own and can't be set here. */
+const RESTORE_FIELDS = SNAPSHOT_FIELDS.split(",").filter((field) => field !== "metadata" && field !== "photos");
+
+/** Google refuses a new contact with more than one of these. */
+const ONE_ONLY = new Set(["names", "birthdays", "biographies"]);
+
+/**
+ * Creates a contact again from a snapshot taken before it was deleted. It comes back with a new id.
+ * Only what the person saved on the contact is sent: not values from the contact's own Google profile, and not the photo.
+ */
+export async function createContact(accessToken: string, snapshot: Person): Promise<Person> {
+  const body: Record<string, unknown> = {};
+  for (const field of RESTORE_FIELDS) {
+    const values = (snapshot as unknown as Record<string, unknown>)[field];
+    if (!Array.isArray(values)) continue;
+    const own = (values as { metadata?: { source?: { type?: string } } }[])
+      .filter((value) => (value.metadata?.source?.type ?? "CONTACT") === "CONTACT")
+      // Groups the person put them in are kept. Their organisation's directory isn't ours to write.
+      .filter((value) => field !== "memberships" || "contactGroupMembership" in value)
+      .map(({ metadata: _metadata, ...rest }) => rest);
+    if (own.length) body[field] = ONE_ONLY.has(field) ? own.slice(0, 1) : own;
+  }
+  const url = new URL(`${PEOPLE_URL}/people:createContact`);
+  url.searchParams.set("personFields", INDEX_FIELDS);
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (response.status === 401) throw new GoogleRevokedError(await response.text());
+  if (!response.ok) throw new Error(`People API createContact said ${response.status}: ${(await response.text()).slice(0, 300)}`);
+  return (await response.json()) as Person;
 }
