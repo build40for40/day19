@@ -1,7 +1,8 @@
 import { App, applyDocumentTheme, applyHostFonts, applyHostStyleVariables, type McpUiHostContext } from '@modelcontextprotocol/ext-apps'
 
-import { MAX_GRATITUDE, MIN_GRATITUDE, type Today, type TodayCard } from '../../src/game'
+import { MAX_GRATITUDE, MIN_GRATITUDE, type Batch, type Contact, type Progress } from '../../src/contract'
 import './style.css'
+import { fakeTools, mcpTools, type Tools } from './tools'
 import { BLOCKED, canListen, listen, type Listener } from './voice'
 
 type Child = Node | string | false | undefined
@@ -19,10 +20,18 @@ function h<K extends keyof HTMLElementTagNameMap>(tag: K, props: Props = {}, ...
   return el
 }
 
-const root = document.getElementById('app')!
-const app = new App({ name: 'Day 19 contacts', version: '0.1.0' })
+type Outcome = { kind: 'kept'; gratitude: string } | { kind: 'let_go' } | { kind: 'elsewhere' }
 
-let today: Today | undefined
+// `?fake=1`, or opening the page on its own in a browser tab, plays the game on made-up contacts with no server.
+const fake = new URLSearchParams(location.search).has('fake') || window.parent === window
+
+const root = document.getElementById('app')!
+const app = new App({ name: 'Day 19 contacts', version: '0.2.0' })
+const tools: Tools = fake ? fakeTools() : mcpTools(app)
+
+let batch: Contact[] | undefined
+let progress: Progress | undefined
+const outcomes = new Map<string, Outcome>()
 let keeping = false
 let busy = false
 let problem = ''
@@ -30,8 +39,8 @@ let draft = ''
 let spoken = false
 let listener: Listener | undefined
 
-const firstName = (contact: TodayCard) => contact.name.split(' ')[0] ?? contact.name
-const initials = (contact: TodayCard) =>
+const firstName = (contact: Contact) => contact.name.split(' ')[0] ?? contact.name
+const initials = (contact: Contact) =>
   contact.name
     .split(/\s+/)
     .map((word) => word[0] ?? '')
@@ -39,72 +48,99 @@ const initials = (contact: TodayCard) =>
     .slice(0, 2)
     .toUpperCase()
 
-const isToday = (value: unknown): value is Today =>
-  typeof value === 'object' && value !== null && Array.isArray((value as Today).contacts) && typeof (value as Today).date === 'string'
+const isBatch = (value: unknown): value is Batch =>
+  typeof value === 'object' && value !== null && Array.isArray((value as Batch).contacts) && typeof (value as Batch).doneForToday === 'boolean'
 
 function stopListening() {
   listener?.stop()
   listener = undefined
 }
 
-function show(next: Today) {
-  today = next
+function reset() {
   keeping = false
   busy = false
   problem = ''
   draft = ''
   spoken = false
   stopListening()
+}
+
+/** A fresh batch from the server: what a new widget starts from. */
+function start(next: Batch) {
+  batch = next.contacts
+  progress = next.progress
+  outcomes.clear()
+  reset()
   render()
 }
 
-/** Every decision goes through the server, which answers with the day as it now stands. */
-async function decide(name: string, args: Record<string, unknown>, said: string) {
+/** Checks the server for what's still waiting, so a contact decided by talking to the assistant doesn't get asked twice. */
+async function catchUp() {
+  if (!batch) return
+  const { contacts, progress: latest } = await tools.next()
+  const waiting = new Set(contacts.map((contact) => contact.id))
+  for (const contact of batch) if (!outcomes.has(contact.id) && !waiting.has(contact.id)) outcomes.set(contact.id, { kind: 'elsewhere' })
+  progress = latest
+}
+
+async function decide(contact: Contact, run: () => Promise<{ progress: Progress }>, outcome: Outcome, said: string) {
   if (busy) return
   busy = true
   problem = ''
   render()
   try {
-    const result = await app.callServerTool({ name, arguments: args })
-    if (result.isError || !isToday(result.structuredContent)) {
-      const block = result.content?.find((item) => item.type === 'text')
-      throw new Error(block?.type === 'text' ? block.text : 'That didn\'t save. Try again.')
-    }
-    show(result.structuredContent)
+    progress = (await run()).progress
+    outcomes.set(contact.id, outcome)
+    reset()
+    render()
     // Tell the assistant what happened in the widget, so it doesn't offer the same contact again.
-    void app.updateModelContext({ content: [{ type: 'text', text: said }] }).catch(() => {})
+    if (!fake) void app.updateModelContext({ content: [{ type: 'text', text: said }] }).catch(() => {})
   } catch (error) {
+    const message = error instanceof Error ? error.message : "That didn't save. Try again."
+    await catchUp().catch(() => {})
     busy = false
-    problem = error instanceof Error ? error.message : 'That didn\'t save. Try again.'
+    // If it turned out to be decided already, just move on to the next one.
+    problem = outcomes.has(contact.id) ? '' : message
+    if (outcomes.has(contact.id)) reset()
     render()
   }
 }
 
 function top(current: number) {
-  const contacts = today?.contacts ?? []
-  const left = contacts.length - current
+  const contacts = batch ?? []
+  const today = current < contacts.length ? `Contact ${current + 1} of ${contacts.length} today` : 'Done for today'
+  const overall = progress ? `${progress.decided} of ${progress.total} decided` : ''
   return h(
     'div',
     { class: 'top' },
-    h('span', {}, left > 0 ? `Contact ${current + 1} of ${contacts.length} today` : 'Done for today'),
+    h('span', {}, today, overall && h('span', { class: 'overall' }, ` · ${overall}`)),
     h(
       'div',
       { class: 'dots', 'aria-hidden': 'true' },
-      ...contacts.map((contact, i) => h('span', { class: `dot ${contact.decision?.kind ?? (i === current ? 'now' : '')}` })),
+      ...contacts.map((contact, i) => h('span', { class: `dot ${outcomes.get(contact.id)?.kind ?? (i === current ? 'now' : '')}` })),
     ),
   )
 }
 
-function who(contact: TodayCard) {
+function avatar(contact: Contact) {
+  const fallback = h('div', { class: 'avatar', 'aria-hidden': 'true' }, initials(contact))
+  if (!contact.photoUrl) return fallback
+  const photo = h('img', { class: 'avatar', src: contact.photoUrl, alt: '', referrerpolicy: 'no-referrer' })
+  // A photo the chat app won't load falls back to initials.
+  photo.addEventListener('error', () => photo.replaceWith(fallback))
+  return photo
+}
+
+function who(contact: Contact) {
   return h(
     'div',
     { class: 'who' },
-    h('div', { class: 'avatar', 'aria-hidden': 'true' }, initials(contact)),
-    h('div', {}, h('p', { class: 'name' }, contact.name), contact.detail ? h('p', { class: 'detail' }, contact.detail) : false),
+    avatar(contact),
+    h('div', {}, h('p', { class: 'name' }, contact.name), contact.organisation ? h('p', { class: 'detail' }, contact.organisation) : false),
   )
 }
 
-function choose(contact: TodayCard) {
+function choose(contact: Contact) {
   return h(
     'div',
     {},
@@ -116,9 +152,10 @@ function choose(contact: TodayCard) {
         {
           class: 'grow',
           'aria-busy': String(busy),
-          click: () => void decide('delete_contact', { contact_id: contact.id }, `I deleted ${contact.name} in the widget. A copy is in the Brain.`),
+          click: () =>
+            void decide(contact, () => tools.letGo(contact.id), { kind: 'let_go' }, `I let ${contact.name} go in the widget. A copy is in the Brain.`),
         },
-        'Delete',
+        'Let go',
       ),
       h(
         'button',
@@ -134,12 +171,12 @@ function choose(contact: TodayCard) {
         'Keep',
       ),
     ),
-    h('p', { class: 'hint' }, 'Delete removes them from your contacts. A copy stays in your Brain.'),
+    h('p', { class: 'hint' }, 'Let go deletes them from your contacts, and from any phone synced to them. A copy stays in your Brain.'),
     h('p', { class: 'error', role: 'alert' }, problem),
   )
 }
 
-function gratitude(contact: TodayCard) {
+function gratitude(contact: Contact) {
   const box = h('textarea', { id: 'gratitude', maxlength: String(MAX_GRATITUDE), placeholder: 'She told me my writing was worth reading' })
   box.value = draft
   const error = h('p', { class: 'error', role: 'alert' }, problem)
@@ -185,8 +222,9 @@ function gratitude(contact: TodayCard) {
     }
     stopListening()
     void decide(
-      'keep_contact',
-      { contact_id: contact.id, gratitude: text, spoken },
+      contact,
+      () => tools.keep(contact.id, text, spoken),
+      { kind: 'kept', gratitude: text },
       `I kept ${contact.name} in the widget and said what I'm grateful for. It's saved in the Brain.`,
     )
   }
@@ -196,7 +234,7 @@ function gratitude(contact: TodayCard) {
     {},
     h('label', { for: 'gratitude' }, `What are you grateful to ${firstName(contact)} for? Type it or say it.`),
     box,
-    h('div', { class: 'voice' }, mic, status, !canListen && h('span', {}, BLOCKED)),
+    h('div', { class: 'voice' }, canListen ? mic : h('span', {}, BLOCKED), status),
     error,
     h(
       'div',
@@ -218,55 +256,45 @@ function gratitude(contact: TodayCard) {
   )
 }
 
-function done(contacts: TodayCard[]) {
-  const kept = contacts.filter((contact) => contact.decision?.kind === 'kept').length
+function done(contacts: Contact[]) {
+  const kept = contacts.filter((contact) => outcomes.get(contact.id)?.kind === 'kept').length
+  const letGo = contacts.filter((contact) => outcomes.get(contact.id)?.kind === 'let_go').length
+  const line = (contact: Contact) => {
+    const outcome = outcomes.get(contact.id)
+    if (outcome?.kind === 'kept') return h('li', {}, `${contact.name}: `, h('span', { class: 'said' }, outcome.gratitude))
+    return h('li', { class: 'gone' }, outcome?.kind === 'let_go' ? `${contact.name}, let go` : `${contact.name}, decided in the chat`)
+  }
   return h(
     'div',
     { class: 'card' },
-    h('p', { class: 'done-title' }, contacts.length ? "That's your five" : 'Nobody left to go through'),
-    h(
-      'p',
-      { class: 'done-body' },
-      contacts.length ? `${kept} kept with thanks, ${contacts.length - kept} let go. Five more tomorrow.` : 'Every contact has been decided.',
-    ),
-    contacts.length > 0 &&
+    h('p', { class: 'done-title' }, contacts.length ? `That's your ${contacts.length === 5 ? 'five' : 'lot'} for today` : "That's today done"),
+    h('p', { class: 'done-body' }, contacts.length ? `${kept} kept with thanks, ${letGo} let go. More tomorrow.` : 'More contacts tomorrow.'),
+    contacts.length > 0 && h('ul', { class: 'list' }, ...contacts.map(line)),
+    !fake &&
       h(
-        'ul',
-        { class: 'list' },
-        ...contacts.map((contact) =>
-          contact.decision?.kind === 'kept'
-            ? h('li', {}, `${contact.name}: `, h('span', { class: 'said' }, contact.decision.gratitude))
-            : h('li', { class: 'gone' }, `${contact.name}, let go`),
+        'div',
+        { class: 'row' },
+        h(
+          'button',
+          { click: () => void app.sendMessage({ role: 'user', content: [{ type: 'text', text: 'Show me my Brain.' }] }).catch(() => {}) },
+          'Read my Brain',
         ),
       ),
-    h(
-      'div',
-      { class: 'row' },
-      h(
-        'button',
-        {
-          click: () =>
-            void app.sendMessage({ role: 'user', content: [{ type: 'text', text: 'Show me my Brain.' }] }).catch(() => {}),
-        },
-        'Read my Brain',
-      ),
-    ),
   )
 }
 
 function render() {
-  if (!today) {
-    root.replaceChildren(h('div', { class: 'top' }, h('span', {}, 'Finding today\'s contacts…')))
+  if (!batch) {
+    root.replaceChildren(h('div', { class: 'top' }, h('span', {}, problem || "Finding today's contacts…")))
     return
   }
-  const { contacts } = today
-  const current = contacts.findIndex((contact) => !contact.decision)
+  const current = batch.findIndex((contact) => !outcomes.has(contact.id))
   if (current < 0) {
-    root.replaceChildren(top(contacts.length), done(contacts))
+    root.replaceChildren(top(batch.length), done(batch))
     return
   }
-  const contact = contacts[current]!
-  const facts = h('div', { class: 'facts' }, contact.email ? h('div', {}, contact.email) : false, contact.phone ? h('div', {}, contact.phone) : false)
+  const contact = batch[current]!
+  const facts = h('div', { class: 'facts' }, ...[...contact.emails, ...contact.phones].map((fact) => h('div', {}, fact)))
   root.replaceChildren(top(current), h('div', { class: 'card' }, who(contact), facts, keeping ? gratitude(contact) : choose(contact)))
 }
 
@@ -276,18 +304,26 @@ function styleFromHost(context: McpUiHostContext) {
   if (context.styles?.css?.fonts) applyHostFonts(context.styles.css.fonts)
 }
 
-app.ontoolresult = (result) => {
-  if (isToday(result.structuredContent)) show(result.structuredContent)
-}
-app.onhostcontextchanged = styleFromHost
-app.onteardown = async () => {
-  stopListening()
-  return {}
-}
-app.onerror = console.error
-
 render()
-void app.connect().then(() => {
-  const context = app.getHostContext()
-  if (context) styleFromHost(context)
-})
+
+if (fake) {
+  void tools.next().then(start)
+} else {
+  app.ontoolresult = (result) => {
+    if (isBatch(result.structuredContent)) start(result.structuredContent)
+  }
+  app.onhostcontextchanged = styleFromHost
+  app.onteardown = async () => {
+    stopListening()
+    return {}
+  }
+  app.onerror = console.error
+  // Coming back to the chat after deciding out loud: drop anyone the assistant has already dealt with.
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && batch && !busy && !keeping) void catchUp().then(render, () => {})
+  })
+  void app.connect().then(() => {
+    const context = app.getHostContext()
+    if (context) styleFromHost(context)
+  })
+}

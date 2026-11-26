@@ -12,7 +12,8 @@
     "test": "vitest run",
     "deploy": "npm run build:widget && npm run wrangler -- deploy",
     "wrangler": "env -u CLOUDFLARE_API_KEY -u CLOUDFLARE_EMAIL wrangler --profile 40for40",
-    "host": "vite --config vite.host.config.ts"
+    "host": "vite --config vite.host.config.ts",
+    "widget": "vite --config vite.config.ts --port 5198 --open '/widget.html?fake=1'"
   },
   "dependencies": {
     "@cfworker/json-schema": "^4.1.6",

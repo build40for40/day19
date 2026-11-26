@@ -1,7 +1,8 @@
 import { DurableObject } from 'cloudflare:workers'
 
-import { DEMO_CONTACTS, type Contact, type ContactSource } from './contacts'
-import { Game, GameError, type GameState, type StateStore, type Today } from './game'
+import { DEMO_CONTACTS, type ContactSource } from './contacts'
+import type { Batch, Contact, Decided, Progress } from './contract'
+import { Game, GameError, type GameState, type StateStore } from './game'
 
 export type Outcome<T> = { ok: true; value: T } | { ok: false; error: string }
 
@@ -35,16 +36,20 @@ export class Brain extends DurableObject {
 
   private readonly game = new Game(this.source, this.store)
 
-  today(): Promise<Today> {
-    return this.game.today()
+  next(limit?: number): Promise<Batch> {
+    return this.game.next(limit)
   }
 
-  keep(id: string, gratitude: string, spoken: boolean): Promise<Outcome<Today>> {
+  progress(): Promise<Progress> {
+    return this.game.progress()
+  }
+
+  keep(id: string, gratitude: string, spoken: boolean): Promise<Outcome<Decided>> {
     return outcome(() => this.game.keep(id, gratitude, spoken))
   }
 
-  delete(id: string): Promise<Outcome<Today>> {
-    return outcome(() => this.game.delete(id))
+  letGo(id: string): Promise<Outcome<Decided>> {
+    return outcome(() => this.game.letGo(id))
   }
 
   markdown(): Promise<string> {
@@ -52,8 +57,8 @@ export class Brain extends DurableObject {
   }
 
   /** Demo only: puts every made-up contact back and empties the Brain. */
-  async reset(): Promise<Today> {
+  async reset(): Promise<Batch> {
     await this.ctx.storage.deleteAll()
-    return this.game.today()
+    return this.game.next()
   }
 }

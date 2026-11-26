@@ -36,10 +36,12 @@ async function run(tool: string) {
   await bridge.connect(new PostMessageTransport(frame.contentWindow!, frame.contentWindow!))
   await ready
   await bridge.sendToolInput({ arguments: {} })
-  await bridge.sendToolResult(await client.callTool({ name: tool, arguments: {} }))
+  // reset_demo has no widget of its own, so it runs first and the game starts again.
+  if (tool !== 'start_game') await client.callTool({ name: tool, arguments: {} })
+  await bridge.sendToolResult(await client.callTool({ name: 'start_game', arguments: {} }))
   note(`called ${tool}`)
 }
 
-document.getElementById('open')!.addEventListener('click', () => void run('todays_contacts'))
+document.getElementById('open')!.addEventListener('click', () => void run('start_game'))
 document.getElementById('reset')!.addEventListener('click', () => void run('reset_demo'))
-void run('todays_contacts')
+void run('start_game')
