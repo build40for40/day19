@@ -42,6 +42,36 @@ const UNDO_MS = 5000
 let pending: { contact: Contact; before: Progress | undefined; timer: ReturnType<typeof setTimeout> } | undefined
 /** The contact on screen last time, so a new one can be dealt in. */
 let shown: string | undefined
+/** The contact decided a moment ago, so its dot can pop once. */
+let justDecided: string | undefined
+
+/** A tiny buzz on phones that allow it (Android, mostly). Everywhere else it does nothing. */
+function buzz(pattern: number | number[]) {
+  try {
+    navigator.vibrate?.(pattern)
+  } catch {
+    // Some chat apps block it. It's only a nicety.
+  }
+}
+
+// Drawn here, with no names or anything else from the contacts in it, so it is safe to set as HTML.
+const GOBLET = `<svg viewBox="0 0 72 72" width="72" height="72" aria-hidden="true">
+  <defs><clipPath id="cup"><path d="M20 14h32c0 20-6 29-16 29S20 34 20 14z"/></clipPath></defs>
+  <g class="goblet-body">
+    <g clip-path="url(#cup)"><rect class="goblet-drink" x="18" y="18" width="36" height="28"/></g>
+    <path class="goblet-line" d="M20 14h32c0 20-6 29-16 29S20 34 20 14z"/>
+    <path class="goblet-line" d="M36 43v13M26 58h20"/>
+  </g>
+  <path class="spark s1" d="M12 12l1.6 4.4L18 18l-4.4 1.6L12 24l-1.6-4.4L6 18l4.4-1.6z"/>
+  <path class="spark s2" d="M60 6l1.2 3.3 3.3 1.2-3.3 1.2L60 15l-1.2-3.3-3.3-1.2 3.3-1.2z"/>
+  <path class="spark s3" d="M62 32l1 2.7 2.7 1-2.7 1-1 2.7-1-2.7-2.7-1 2.7-1z"/>
+</svg>`
+
+function goblet() {
+  const cup = h('div', { class: 'goblet' })
+  cup.innerHTML = GOBLET
+  return cup
+}
 
 const firstName = (contact: Contact) => contact.name.split(' ')[0] ?? contact.name
 const initials = (contact: Contact) =>
@@ -109,6 +139,8 @@ async function decide(contact: Contact, run: () => Promise<{ progress: Progress 
   try {
     progress = (await run()).progress
     outcomes.set(contact.id, outcome)
+    justDecided = contact.id
+    buzz(12)
     reset()
     render()
     // Tell the assistant what happened in the widget, so it doesn't offer the same contact again.
@@ -131,6 +163,8 @@ function letGo(contact: Contact) {
     const timer = setTimeout(() => void commitLetGo(), UNDO_MS)
     pending = { contact, before: progress, timer }
     outcomes.set(contact.id, { kind: 'let_go' })
+    justDecided = contact.id
+    buzz(8)
     if (progress) progress = { ...progress, decided: progress.decided + 1 }
     reset()
     render()
@@ -175,7 +209,7 @@ function top(current: number) {
     h(
       'div',
       { class: 'dots', 'aria-hidden': 'true' },
-      ...contacts.map((contact, i) => h('span', { class: `dot ${outcomes.get(contact.id)?.kind ?? (i === current ? 'now' : '')}` })),
+      ...contacts.map((contact, i) => h('span', { class: `dot ${outcomes.get(contact.id)?.kind ?? (i === current ? 'now' : '')}${contact.id === justDecided ? ' pop' : ''}` })),
     ),
   )
 }
@@ -348,7 +382,8 @@ function done(contacts: Contact[]) {
   })
   return h(
     'div',
-    { class: 'card deal' },
+    { class: 'card deal done' },
+    goblet(),
     h('p', { class: 'done-title' }, contacts.length ? `That's your ${contacts.length === BATCH_SIZE ? 'five' : 'lot'}. Well gobbled.` : "That's today done"),
     h('p', { class: 'done-body' }, contacts.length ? `${kept.length} thanked, ${letGo.length} let go.` : 'More contacts tomorrow.'),
     ...thanks,
@@ -389,9 +424,11 @@ function render() {
   if (current < 0) {
     const fresh = shown !== 'done'
     shown = 'done'
+    if (fresh) buzz([14, 70, 14, 70, 30])
     const card = done(batch)
     card.classList.toggle('deal', fresh)
     root.replaceChildren(top(batch.length), card, undoBar() || '')
+    justDecided = undefined
     return
   }
   const contact = batch[current]!
@@ -400,6 +437,7 @@ function render() {
   const card = h('div', { class: shown === contact.id ? 'card' : 'card deal' }, who(contact), facts, keeping ? gratitude(contact) : choose(contact))
   shown = contact.id
   root.replaceChildren(top(current), card, undoBar() || '')
+  justDecided = undefined
 }
 
 function styleFromHost(context: McpUiHostContext) {
