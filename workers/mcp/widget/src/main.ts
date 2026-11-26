@@ -56,15 +56,18 @@ function buzz(pattern: number | number[]) {
 
 /**
  * The turkey on the done screen. Its tail has one feather for each of today's contacts, gold for someone thanked and
- * grey for someone let go, and it gobbles up the crumbs. Only the kind of each outcome goes into the drawing, never
+ * grey for someone let go (or a plain fan of five when this widget saw none of them), and it gobbles up the crumbs. Only the kind of each outcome goes into the drawing, never
  * a name or anything else from the contacts, so it is safe to set as HTML.
  */
 function turkey(kinds: Array<Outcome['kind'] | undefined>) {
-  const spread = kinds.length > 1 ? 130 / (kinds.length - 1) : 0
-  const feathers = kinds
+  // Opened after the day was done, there's nobody to count, but a turkey without its tail is just a bird.
+  const tail = kinds.length ? kinds : Array<'plain'>(BATCH_SIZE).fill('plain')
+  const spread = tail.length > 1 ? 130 / (tail.length - 1) : 0
+  const feathers = tail
     .map((kind, i) => {
-      const angle = kinds.length > 1 ? -65 + spread * i : 0
-      return `<g transform="rotate(${angle.toFixed(1)} 44 50)"><ellipse class="feather ${kind === 'kept' ? 'thanked' : 'gone'}" style="animation-delay:${150 + i * 110}ms" cx="44" cy="20" rx="6.5" ry="17"/></g>`
+      const angle = tail.length > 1 ? -65 + spread * i : 0
+      const colour = kind === 'plain' ? 'plain' : kind === 'kept' ? 'thanked' : 'gone'
+      return `<g transform="rotate(${angle.toFixed(1)} 44 50)"><ellipse class="feather ${colour}" style="animation-delay:${150 + i * 110}ms" cx="44" cy="20" rx="6.5" ry="17"/></g>`
     })
     .join('')
   const bird = h('div', { class: 'turkey' })
