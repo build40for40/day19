@@ -67,7 +67,16 @@ export function createServer(env: Env, session: Session): McpServer {
   // Signed-in Brains need the Google token for every call. The demo Brain needs none.
   const token = session.kind === 'google' ? session.google.accessToken : undefined
   const brain = env.BRAINS.get(env.BRAINS.idFromName(user))
-  const server = new McpServer({ name: SERVER_NAME, version: '0.3.0' }, { instructions: SERVER_INSTRUCTIONS })
+  const site = new URL(env.MCP_RESOURCE).origin
+  // The turkey, for chat apps that show a server's own icon instead of its site's favicon.
+  const icons = [
+    { src: `${site}/turkey.svg`, mimeType: 'image/svg+xml', sizes: ['any'] },
+    { src: `${site}/apple-touch-icon.png`, mimeType: 'image/png', sizes: ['180x180'] },
+  ]
+  const server = new McpServer(
+    { name: SERVER_NAME, title: 'Gobbler', version: '0.3.0', icons, websiteUrl: `${site}/` },
+    { instructions: SERVER_INSTRUCTIONS },
+  )
   const meta = toolMeta(session)
 
   /** When a decision finishes today's contacts, tells the assistant to draft the thank-yous. */
