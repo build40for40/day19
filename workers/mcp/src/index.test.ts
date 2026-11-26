@@ -35,6 +35,7 @@ describe("worker", () => {
     const names = tools.result.tools.map((tool: { name: string }) => tool.name);
     expect(names).toEqual(expect.arrayContaining(["start_game", "next_contacts", "keep_contact", "let_go_contact", "reset_demo"]));
     expect(names).not.toContain("list_contacts");
+    for (const tool of tools.result.tools) expect(tool._meta.securitySchemes).toEqual([{ type: "noauth" }]);
 
     const started = await json(await rpc("tools/call", { name: "reset_demo", arguments: {} }, 2));
     expect(started.result.structuredContent.contacts).toHaveLength(5);

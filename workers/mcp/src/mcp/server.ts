@@ -7,7 +7,7 @@ import { z } from 'zod'
 import widgetHtml from '../../dist/widget.html'
 import type { ContactRow, Outcome } from '../brain'
 import { TOOL, type Batch, type Decided } from '../contract'
-import { DEMO_USER } from '../env'
+import { DEMO_USER, OAUTH_SCOPE } from '../env'
 import { GoogleRevokedError, type GoogleProps } from '../google'
 import * as schema from './schemas'
 import { BRAIN_TOOL, batchText, decidedText, LIST_TOOL, progressText, RESET_TOOL, SERVER_INSTRUCTIONS, SERVER_NAME, SYNC_TOOL, TEXT } from './text'
@@ -54,6 +54,13 @@ const listed = (c: ContactRow) => ({
   gratitude: c.gratitude,
 })
 
+type ToolMeta = { securitySchemes: ({ type: 'noauth' } | { type: 'oauth2'; scopes: string[] })[] }
+
+/** ChatGPT reads this to know which tools need the person signed in. */
+const toolMeta = (session: Session): ToolMeta => ({
+  securitySchemes: session.kind === 'google' ? [{ type: 'oauth2', scopes: [OAUTH_SCOPE] }] : [{ type: 'noauth' }],
+})
+
 /** A fresh server per request. All state lives in the person's Brain. */
 export function createServer(env: Env, session: Session): McpServer {
   const user = session.kind === 'google' ? session.google.userId : DEMO_USER
@@ -61,6 +68,7 @@ export function createServer(env: Env, session: Session): McpServer {
   const token = session.kind === 'google' ? session.google.accessToken : undefined
   const brain = env.BRAINS.get(env.BRAINS.idFromName(user))
   const server = new McpServer({ name: SERVER_NAME, version: '0.3.0' }, { instructions: SERVER_INSTRUCTIONS })
+  const meta = toolMeta(session)
 
   // The only tool with a widget. The rest return data, for the widget's buttons and for the assistant.
   registerAppTool(
@@ -71,7 +79,7 @@ export function createServer(env: Env, session: Session): McpServer {
       inputSchema: schema.nothing,
       outputSchema: schema.batch,
       annotations: { readOnlyHint: true, openWorldHint: false },
-      _meta: { ui: { resourceUri: WIDGET_URI } },
+      _meta: { ...meta, ui: { resourceUri: WIDGET_URI } },
     },
     () => guarded(async () => batchResult(await brain.next(undefined, token))),
   )
@@ -84,6 +92,7 @@ export function createServer(env: Env, session: Session): McpServer {
       inputSchema: schema.nextInput,
       outputSchema: schema.batch,
       annotations: { readOnlyHint: true, openWorldHint: false },
+      _meta: meta,
     },
     ({ limit }) => guarded(async () => batchResult(await brain.next(limit, token))),
   )
@@ -96,6 +105,7 @@ export function createServer(env: Env, session: Session): McpServer {
       inputSchema: schema.keepInput,
       outputSchema: schema.decided,
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+      _meta: meta,
     },
     ({ id, gratitude }) => guarded(async () => decidedResult(await brain.keep(id, gratitude, token))),
   )
@@ -108,6 +118,7 @@ export function createServer(env: Env, session: Session): McpServer {
       inputSchema: schema.letGoInput,
       outputSchema: schema.decided,
       annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
+      _meta: meta,
     },
     ({ id }) => guarded(async () => decidedResult(await brain.letGo(id, token))),
   )
@@ -120,6 +131,7 @@ export function createServer(env: Env, session: Session): McpServer {
       inputSchema: schema.nothing,
       outputSchema: schema.progress,
       annotations: { readOnlyHint: true, openWorldHint: false },
+      _meta: meta,
     },
     () =>
       guarded(async () => {
@@ -130,19 +142,19 @@ export function createServer(env: Env, session: Session): McpServer {
 
   server.registerTool(
     BRAIN_TOOL,
-    { title: TEXT.brain.title, description: TEXT.brain.description, inputSchema: schema.nothing, annotations: { readOnlyHint: true, openWorldHint: false } },
+    { title: TEXT.brain.title, description: TEXT.brain.description, inputSchema: schema.nothing, annotations: { readOnlyHint: true, openWorldHint: false }, _meta: meta },
     () => guarded(async () => ({ content: text(await brain.markdown(token)) })),
   )
 
-  if (session.kind === 'google') registerGoogleTools(server, brain, session.google.accessToken)
-  else registerDemoTools(server, brain)
+  if (session.kind === 'google') registerGoogleTools(server, brain, session.google.accessToken, meta)
+  else registerDemoTools(server, brain, meta)
 
   registerWidget(server)
   return server
 }
 
 /** Only for signed-in people: their Google Contacts as the Brain holds them. */
-function registerGoogleTools(server: McpServer, brain: DurableObjectStub<import('../brain').Brain>, token: string) {
+function registerGoogleTools(server: McpServer, brain: DurableObjectStub<import('../brain').Brain>, token: string, meta: ToolMeta) {
   server.registerTool(
     SYNC_TOOL,
     {
@@ -150,6 +162,7 @@ function registerGoogleTools(server: McpServer, brain: DurableObjectStub<import(
       description: TEXT.sync.description,
       inputSchema: z.object({ force: z.boolean().optional().describe(TEXT.sync.force) }),
       annotations: { readOnlyHint: true, openWorldHint: false },
+      _meta: meta,
     },
     ({ force }) =>
       guarded(async () => {
@@ -173,6 +186,7 @@ function registerGoogleTools(server: McpServer, brain: DurableObjectStub<import(
         offset: z.number().int().min(0).optional().describe(TEXT.list.offset),
       }),
       annotations: { readOnlyHint: true, openWorldHint: false },
+      _meta: meta,
     },
     (args) =>
       guarded(async () => {
@@ -186,7 +200,7 @@ function registerGoogleTools(server: McpServer, brain: DurableObjectStub<import(
 }
 
 /** Only on the demo endpoint: start the made-up contacts again. */
-function registerDemoTools(server: McpServer, brain: DurableObjectStub<import('../brain').Brain>) {
+function registerDemoTools(server: McpServer, brain: DurableObjectStub<import('../brain').Brain>, meta: ToolMeta) {
   server.registerTool(
     RESET_TOOL,
     {
@@ -195,6 +209,7 @@ function registerDemoTools(server: McpServer, brain: DurableObjectStub<import('.
       inputSchema: schema.nothing,
       outputSchema: schema.batch,
       annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
+      _meta: meta,
     },
     async () => {
       const result = await brain.reset()
