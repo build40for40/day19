@@ -9,6 +9,7 @@ import {
   type OAuthHelpers,
 } from "@cloudflare/workers-oauth-provider";
 import { exchangeCode, fetchUserInfo, googleAuthorizeUrl, type GoogleProps } from "./google";
+import { privacyBody } from "./privacy";
 
 type Env_ = Env & { OAUTH_PROVIDER: OAuthHelpers };
 
@@ -158,8 +159,12 @@ export const authHandler = {
       if (url.pathname === "/") {
         return page(
           "Day 19",
-          `<h1>Day 19: Gratitude stays unsaid</h1><p>This is the MCP server for Day 19 of <a href="https://build40for40.com">40 for 40</a>. Add <code>${escape(url.origin)}/mcp</code> to Claude or ChatGPT as a custom connector.</p>`,
+          `<h1>Day 19: Gratitude stays unsaid</h1><p>This is the MCP server for Day 19 of <a href="https://build40for40.com">40 for 40</a>. Add <code>${escape(url.origin)}/mcp</code> to Claude or ChatGPT as a custom connector.</p><p class="muted"><a href="/privacy">Privacy</a></p>`,
         );
+      }
+
+      if (url.pathname === "/privacy") {
+        return page("Privacy · Day 19", privacyBody);
       }
 
       return new Response("Not found", { status: 404 });
