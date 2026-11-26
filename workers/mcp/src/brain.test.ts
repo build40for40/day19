@@ -7,6 +7,7 @@ import type { Person } from './google'
 function fakeGoogle(people: Person[]) {
   const calls: string[] = []
   const contacts = new Map(people.map((p) => [p.resourceName, p]))
+  const created: Partial<Person>[] = []
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
     const url = new URL(input instanceof Request ? input.url : String(input))
     const method = init?.method ?? 'GET'
@@ -23,9 +24,16 @@ function fakeGoogle(people: Person[]) {
       contacts.delete(deleting[1]!)
       return new Response('{}')
     }
+    if (url.pathname === '/v1/people:createContact' && method === 'POST') {
+      const body = JSON.parse(String(init?.body)) as Partial<Person>
+      created.push(body)
+      const made = { ...body, resourceName: `people/new${created.length}`, etag: 'e-new', metadata: { sources: [{ type: 'CONTACT', updateTime: '2026-11-26T12:00:00Z' }] } } as Person
+      contacts.set(made.resourceName, made)
+      return Response.json(made)
+    }
     return new Response('not faked', { status: 500 })
   })
-  return { calls, contacts }
+  return { calls, contacts, created }
 }
 
 const person = (id: string, name: string, updateTime: string, extra: Partial<Person> = {}): Person => ({
@@ -74,6 +82,42 @@ describe('a signed-in Brain', () => {
     expect(byName['Eve Mum']).toMatchObject({ status: 'kept', gratitude: 'She taught me to swim' })
     expect(byName['Cat Oldest']).toMatchObject({ status: 'let_go', hasSnapshot: true })
     expect(await brain.markdown('fake-token')).toContain('Grateful for: She taught me to swim')
+  })
+
+  it('starts today over: kept goes back to new, and let go is created again in Google from the snapshot', async () => {
+    const google = fakeGoogle([
+      person('a', 'Ada Old', '2012-01-01T00:00:00Z', {
+        names: [
+          { displayName: 'Ada Old', metadata: { source: { type: 'CONTACT' } } },
+          { displayName: 'Ada Profile', metadata: { source: { type: 'PROFILE' } } },
+        ],
+        photos: [{ url: 'https://lh3.googleusercontent.com/example' }],
+      } as unknown as Partial<Person>),
+      person('b', 'Ben Older', '2011-01-01T00:00:00Z'),
+    ])
+    const brain = env.BRAINS.get(env.BRAINS.idFromName('google-start-over-user'))
+    await brain.setProfile({ userId: 'google-start-over-user', email: 'me@example.com', familyName: 'Example' })
+
+    await brain.next(undefined, false, 'fake-token')
+    await brain.letGo('people/a', 'fake-token')
+    await brain.keep('people/b', 'She taught me to swim', 'fake-token')
+    expect(google.contacts.has('people/a')).toBe(false)
+
+    const over = await brain.startOver('fake-token')
+    expect(over).toMatchObject({ kept: 1, letGo: 1, batch: { doneForToday: false, progress: { decided: 0, total: 2 } } })
+    expect(over.batch.contacts.map((c) => c.id).sort()).toEqual(['people/b', 'people/new1'])
+    // Only the person's own name is written back, with none of Google's metadata, photo or ids.
+    expect(google.created).toEqual([{ names: [{ displayName: 'Ada Old' }], emailAddresses: [{ value: 'a@example.com' }] }])
+
+    const listed = await brain.listContacts({})
+    expect(listed.contacts.map((c) => [c.id, c.status, c.gratitude])).toEqual([
+      ['people/new1', 'new', null],
+      ['people/b', 'new', null],
+    ])
+    expect(await brain.markdown('fake-token')).toContain('Nobody here yet')
+
+    // The restored contact plays like any other.
+    expect(await brain.keep('people/new1', 'the lift home', 'fake-token')).toMatchObject({ ok: true })
   })
 
   it('refuses to be reset like the demo', async () => {

@@ -2,6 +2,7 @@ import { BATCH_SIZE, MAX_GRATITUDE, TOOL, type Batch, type Decided, type Progres
 
 export const SERVER_NAME = 'gobbler'
 export const THANKS_TOOL = 'thank_you_notes'
+export const START_OVER_TOOL = 'start_over_today'
 
 /** Ends every thank-you draft, word for word, unless the person asks to leave it out. */
 export const THANKS_PS =
@@ -28,6 +29,7 @@ Starting the game: the person's way in is "Let's Gobble". Call ${TOOL.start} str
 - Only call ${TOOL.letGo} when the person clearly says to let go of or delete that contact. It deletes the contact from their contacts list and from any phone synced to it. A copy stays in the Brain.
 - After deciding in the chat, call ${TOOL.start} again if they want to see where they are.
 - Five a day is the habit, not a limit. When today's are done and the person asks for more ("five more", "keep going"), call ${TOOL.next} with more set to true, then ${TOOL.start}. Don't deal more unless they ask.
+- If the person clearly asks to start today over or reset today ("start over today", "reset for today", "undo today"), call ${START_OVER_TOOL}, then ${TOOL.start}. It undoes only today's decisions: gratitude written today is erased, and anyone let go today goes back into their contacts list from the Brain's copy. Never call it for anything less clear than that.
 - This server never sends anything to the contacts themselves.
 
 Thank-you emails. Write them without asking first when a round is done: a ${TOOL.keep} or ${TOOL.letGo} result says today's contacts are done, or the person says they've finished their five. Also write them whenever the person asks ("draft thank-yous", "write to Jeff", "email the people I kept"). Drafts are never sent, so there's nothing to confirm:
@@ -70,6 +72,11 @@ export const TEXT = {
     id: 'Only this contact, drafted again even if it already has one.',
     all: 'Everyone kept, including those who already have a draft.',
   },
+  startOver: {
+    title: 'Start today over',
+    description:
+      "Undoes every decision made today and puts today's first contacts back to be decided again. Gratitude written today is erased. Anyone let go today is created again in the contacts list from the Brain's copy, without their photo. Earlier days are never touched, and thank-you drafts already saved stay where they are. Only call this when the person clearly asks to start today over, reset today or undo today.",
+  },
   reset: {
     title: 'Reset the demo',
     description: 'Demo only. Puts every made-up contact back and empties the Brain.',
@@ -108,6 +115,12 @@ export function batchText({ contacts, progress, doneForToday }: Batch): string {
   const lines = contacts.map((contact) => `- ${contact.name} (id ${contact.id}${contact.organisation ? `, ${contact.organisation}` : ''})`)
   return [`${contacts.length} still to decide today. ${progressText(progress)}`, ...lines].join('\n')
 }
+
+/** What the model reads after a start over: what was undone, then the hand as it now stands. */
+export const startOverText = (kept: number, letGo: number, batch: Batch) =>
+  kept + letGo === 0
+    ? `Nothing was decided today, so there was nothing to undo. ${batchText(batch)}`
+    : `Today is started over. ${kept} kept ${kept === 1 ? 'contact is' : 'contacts are'} undecided again and the gratitude is erased. ${letGo} let go ${letGo === 1 ? 'contact is' : 'contacts are'} back in the contacts list. Call ${TOOL.start} to show them.\n\n${batchText(batch)}`
 
 /** Added to a keep or let go result when it finishes the round, so the assistant drafts the thank-yous. */
 export const ROUND_DONE = `That's today's contacts done. Now call ${THANKS_TOOL} and save a Gmail draft for each new thank-you, without asking first.`

@@ -21,6 +21,12 @@ function setup(count = 8, start = '2026-11-26T10:00:00Z') {
   const source: ContactSource = {
     list: async () => contacts,
     remove: async (id) => void (contacts = contacts.filter((c) => c.id !== id)),
+    // Like Google, a restored contact comes back under a new id.
+    restore: async (contact) => {
+      const back = { ...contact, id: `${contact.id}-back` }
+      contacts = [...contacts, back]
+      return back
+    },
   }
   const store: StateStore = { load: async () => structuredClone(saved), save: async (s) => void (saved = structuredClone(s)) }
   return {
@@ -134,6 +140,42 @@ describe('Game', () => {
     expect(initials(third.contacts)).toEqual(['Y', 'Z'])
     for (const contact of third.contacts) await game.keep(contact.id, 'thank you')
     expect(await game.next(undefined, true)).toMatchObject({ contacts: [], doneForToday: true, progress: { decided: 12, total: 12 } })
+  })
+
+  it("starts today over: today's decisions are undone, let go contacts come back, and earlier days stay", async () => {
+    const { game, contacts, setNow } = setup(12, '2026-11-25T10:00:00Z')
+    const yesterday = (await game.next()).contacts
+    await game.keep(yesterday[0]!.id, 'the lift home')
+    await game.letGo(yesterday[1]!.id)
+
+    setNow('2026-11-26T10:00:00Z')
+    const first = (await game.next()).contacts
+    await game.keep(first[0]!.id, 'teaching me mah jong')
+    await game.letGo(first[1]!.id)
+    for (const contact of first.slice(2)) await game.letGo(contact.id)
+    const extra = (await game.next(undefined, true)).contacts
+    await game.keep(extra[0]!.id, 'feeding my cat')
+    expect(contacts()).toHaveLength(7)
+
+    const { batch, undone } = await game.startOver()
+    expect(undone).toHaveLength(6)
+    // The same first five, in the same order. Anyone let go is back under the id Google gave them.
+    expect(batch.contacts.map((c) => c.name)).toEqual(first.map((c) => c.name))
+    expect(batch.contacts.map((c) => c.id)).toEqual([first[0]!.id, ...first.slice(1).map((c) => `${c.id}-back`)])
+    expect(batch.doneForToday).toBe(false)
+    expect(batch.progress).toEqual({ decided: 2, total: 12 })
+    expect(contacts()).toHaveLength(11)
+
+    const brain = await game.brain()
+    expect(brain).toContain('the lift home')
+    expect(brain).not.toContain('mah jong')
+    expect(brain).not.toContain('feeding my cat')
+    expect(await game.thankYous()).toHaveLength(1)
+
+    // Deciding again works, and a second start over with nothing decided changes nothing.
+    await game.keep(batch.contacts[1]!.id, 'thank you')
+    expect((await game.startOver()).undone).toHaveLength(1)
+    expect((await game.startOver()).undone).toHaveLength(0)
   })
 
   it('says so when the Brain is empty', async () => {

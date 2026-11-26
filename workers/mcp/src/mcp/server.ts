@@ -10,7 +10,7 @@ import { TOOL, type Batch, type Decided } from '../contract'
 import { DEMO_USER, OAUTH_SCOPE } from '../env'
 import { GoogleRevokedError, type GoogleProps } from '../google'
 import * as schema from './schemas'
-import { BRAIN_TOOL, batchText, decidedText, LIST_TOOL, progressText, RESET_TOOL, SERVER_INSTRUCTIONS, SERVER_NAME, SYNC_TOOL, ROUND_DONE, TEXT, THANKS_BRIEF, THANKS_TOOL } from './text'
+import { BRAIN_TOOL, batchText, decidedText, LIST_TOOL, progressText, RESET_TOOL, SERVER_INSTRUCTIONS, SERVER_NAME, START_OVER_TOOL, startOverText, SYNC_TOOL, ROUND_DONE, TEXT, THANKS_BRIEF, THANKS_TOOL } from './text'
 
 // Chat apps cache the widget by its address, so the address changes whenever the built widget does.
 const WIDGET_URI = `ui://gobbler/contacts-${[...widgetHtml].reduce((hash, char) => (Math.imul(hash, 31) + char.charCodeAt(0)) >>> 0, 7).toString(36)}.html`
@@ -181,6 +181,24 @@ export function createServer(env: Env, session: Session): McpServer {
             ? 'Nobody kept yet, so there is nobody to thank. Keep someone in Gobbler first.'
             : 'No new thank-yous: everyone kept already has a draft. Call again with all set to true to draft them all again.'
         return { content: text(summary), structuredContent: { notes } }
+      }),
+  )
+
+  server.registerTool(
+    START_OVER_TOOL,
+    {
+      title: TEXT.startOver.title,
+      description: TEXT.startOver.description,
+      inputSchema: schema.nothing,
+      outputSchema: schema.batch,
+      // Erases today's gratitude, so chat apps ask before the assistant runs it.
+      annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
+      _meta: meta,
+    },
+    () =>
+      guarded(async () => {
+        const { batch, kept, letGo } = await brain.startOver(token)
+        return { content: text(startOverText(kept, letGo, batch)), structuredContent: { ...batch } }
       }),
   )
 

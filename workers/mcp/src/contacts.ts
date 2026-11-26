@@ -4,6 +4,8 @@ import type { Contact } from './contract'
 export interface ContactSource {
   list(): Promise<Contact[]>
   remove(id: string): Promise<void>
+  /** Puts back someone `remove` deleted. Returns them as they are now: Google gives a restored contact a new id. */
+  restore(contact: Contact): Promise<Contact>
 }
 
 const fake = (id: string, name: string, organisation = '', email = true, phone?: string): Contact => ({

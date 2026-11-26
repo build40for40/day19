@@ -13,7 +13,7 @@ import { DurableObject } from 'cloudflare:workers'
 import { DEMO_CONTACTS, type ContactSource } from './contacts'
 import type { Batch, Contact, Decided, Progress } from './contract'
 import { Game, GameError, type GameState, type Pick, type StateStore, type ThankYou } from './game'
-import { deleteContact, getPeople, listConnections, SyncTokenExpiredError } from './google'
+import { createContact, deleteContact, getPeople, listConnections, SyncTokenExpiredError, type Person } from './google'
 import { dealHand, indexContact, type IndexedContact } from './score'
 
 export type Outcome<T> = { ok: true; value: T } | { ok: false; error: string }
@@ -151,6 +151,11 @@ export class Brain extends DurableObject<Env> {
       const contacts = (await this.ctx.storage.get<Contact[]>('contacts')) ?? DEMO_CONTACTS
       await this.ctx.storage.put('contacts', contacts.filter((contact) => contact.id !== id))
     },
+    restore: async (contact) => {
+      const contacts = (await this.ctx.storage.get<Contact[]>('contacts')) ?? DEMO_CONTACTS
+      if (!contacts.some((have) => have.id === contact.id)) await this.ctx.storage.put('contacts', [...contacts, contact])
+      return contact
+    },
   }
 
   /** Google Contacts, through the copy in SQLite. Let go snapshots first, then deletes from Google. */
@@ -173,6 +178,32 @@ export class Brain extends DurableObject<Env> {
         }
         await deleteContact(accessToken, id)
         this.sql.exec("UPDATE contacts SET status = 'let_go', decided_at = ? WHERE resource_name = ?", new Date().toISOString(), id)
+      },
+      restore: async (contact) => {
+        const row = this.sql.exec<{ snapshot: string | null }>('SELECT snapshot FROM contacts WHERE resource_name = ?', contact.id).toArray()[0]
+        // The snapshot has everything. Without one, the Brain's own copy still has the name, emails, phones and organisation.
+        const snapshot: Person = row?.snapshot
+          ? JSON.parse(row.snapshot)
+          : {
+              resourceName: contact.id,
+              etag: '',
+              names: [{ unstructuredName: contact.name }],
+              emailAddresses: contact.emails.map((value) => ({ value })),
+              phoneNumbers: contact.phones.map((value) => ({ value })),
+              organizations: contact.organisation ? [{ name: contact.organisation }] : [],
+            }
+        const created = indexContact(await createContact(accessToken, snapshot), this.getMeta('family_name') ?? '')
+        // Google gave them a new id, so the old row retires and the new one starts fresh.
+        this.sql.exec("UPDATE contacts SET status = 'gone' WHERE resource_name = ?", contact.id)
+        this.upsert(created)
+        return {
+          id: created.resourceName,
+          name: created.displayName,
+          emails: created.emails,
+          phones: created.phones,
+          photoUrl: created.photoUrl,
+          organisation: created.organisation,
+        }
       },
     }
   }
@@ -249,6 +280,18 @@ export class Brain extends DurableObject<Env> {
 
   async thankYous(options: { id?: string; all?: boolean }, accessToken?: string): Promise<ThankYou[]> {
     return (await this.game(accessToken)).thankYous(options)
+  }
+
+  /** Undoes today's decisions, for the demo and for signed-in people alike. Earlier days stay as they are. */
+  async startOver(accessToken?: string): Promise<{ batch: Batch; kept: number; letGo: number }> {
+    const { batch, undone } = await (await this.game(accessToken)).startOver()
+    const kept = undone.filter((entry) => entry.decision.kind === 'kept')
+    if (this.signedIn) {
+      for (const { contact } of kept) {
+        this.sql.exec("UPDATE contacts SET status = 'new', gratitude = NULL, decided_at = NULL WHERE resource_name = ?", contact.id)
+      }
+    }
+    return { batch, kept: kept.length, letGo: undone.length - kept.length }
   }
 
   /** Demo only: puts every made-up contact back and empties the Brain. Never wipes a signed-in Brain. */
