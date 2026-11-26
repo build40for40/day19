@@ -1,55 +1,276 @@
 <!doctype html>
-<!-- Ben's landing page. Replace this whole file, and put CSS and images next to it in landing/.
+<!-- Ben's landing page. CSS and images live next to it in landing/.
      Keep a link to /privacy: Google's consent screen points at it. -->
 <html lang="en">
+<head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gobbler</title>
 <meta name="description" content="A gratitude game for your Google Contacts, played in Claude or ChatGPT.">
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" type="image/svg+xml" href="/turkey.svg">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gabarito:wght@700;900&family=Oleo+Script:wght@700&display=swap" rel="stylesheet">
 <style>
-  :root { color-scheme: light dark; --bg: #faf6f0; --fg: #2b2118; --muted: #6b5d50; --accent: #b4532a; --card: #fff; }
-  @media (prefers-color-scheme: dark) { :root { --bg: #1c1713; --fg: #f3ebe1; --muted: #b8a999; --accent: #e07b4c; --card: #26201b; } }
-  * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--fg); font: 17px/1.55 system-ui, sans-serif; }
-  main { max-width: 36rem; margin: 0 auto; padding: 2.5rem 1rem 3rem; }
-  h1 { font-size: 2.2rem; line-height: 1.1; margin: 0 0 0.5rem; }
-  h2 { font-size: 1.2rem; margin-top: 2rem; }
-  .tagline { font-size: 1.15rem; color: var(--muted); margin-top: 0; }
-  .card { background: var(--card); border-radius: 0.8rem; padding: 1rem 1.1rem; margin: 1rem 0; }
-  code { overflow-wrap: anywhere; background: color-mix(in srgb, var(--accent) 12%, transparent); padding: 0.1rem 0.35rem; border-radius: 0.3rem; }
-  ol { padding-left: 1.3rem; }
-  a { color: var(--accent); }
-  footer { margin-top: 2.5rem; color: var(--muted); font-size: 0.95rem; }
+html{scroll-behavior:smooth}
+body{margin:0}
+.pg{--tom:#E9573B;--ox:#4A1410;--cr:#FFF4E6;--tint:#F7E2CC;--li:#DFF5A3;--ink:#1E0906;--mute:#6B2E24;--hf:"Gabarito","Arial Black",sans-serif;--sc:"Oleo Script",cursive;--bf:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--mf:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--pad:clamp(16px,4.4vw,64px);--gap:clamp(12px,1.7vw,24px);--sp:clamp(72px,9vw,136px);--L:clamp(46px,12.4vw,180px);--M:clamp(36px,4.3vw,62px);width:100%;overflow-x:hidden;background:var(--cr);color:var(--ink);font-family:var(--bf);font-size:19px;font-weight:450;line-height:1.45;letter-spacing:-.004em}
+.pg *,.pg *::before,.pg *::after{box-sizing:border-box}
+:where(.pg) :where(p,h1,h2,h3,ol,figure){margin:0}
+.pg p{text-wrap:pretty}
+.w{max-width:1440px;margin:0 auto;padding-left:var(--pad);padding-right:var(--pad)}
+.g{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:var(--gap)}
+.ox{background:var(--ox);color:var(--cr)}
+.tm{background:var(--tom);color:var(--ink)}
+.h{font-family:var(--hf);font-weight:900;letter-spacing:-.012em;line-height:.94}
+.h span{display:block}
+.M{font-size:var(--M);line-height:.98}
+.pg a:focus-visible{outline:none;box-shadow:0 0 0 3px var(--cr),0 0 0 6px var(--ink)}
+
+.tk{display:block;overflow:visible}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:62px;padding:0 30px;border-radius:999px;font-family:var(--hf);font-weight:900;font-size:21px;letter-spacing:0;text-decoration:none;white-space:nowrap;background:var(--li);color:var(--ink)}
+.btn.line{background:transparent;color:inherit;box-shadow:inset 0 0 0 3px currentColor}
+
+.top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 28px;padding-top:20px;padding-bottom:20px;font-size:16px;font-weight:600;letter-spacing:.005em}
+.logo{display:flex;align-items:center;gap:12px;color:rgba(255,244,230,.8);text-decoration:none;--tk-line:#FFF4E6;--tk-body:#4A1410}
+.logo .tk{width:46px;height:46px}
+.top nav{display:flex;flex-wrap:wrap;gap:32px}
+.top nav a{color:var(--cr);text-decoration:none}
+.top nav a:hover{text-decoration:underline;text-underline-offset:5px;text-decoration-thickness:2px}
+
+.hero{padding-top:clamp(6px,1vw,14px);padding-bottom:clamp(64px,7.4vw,108px)}
+.mark{position:relative;display:block;width:max-content;margin:0 0 0 -.05em;font-family:var(--sc);font-weight:700;color:var(--tom);font-size:clamp(84px,28.8vw,415px);line-height:.9;letter-spacing:-.01em}
+.mark .bite{position:absolute;pointer-events:none;display:block;width:.52em;height:.52em;left:-.24em;top:-.01em;fill:var(--ox)}
+.hg{margin-top:clamp(56px,7.6vw,110px);align-items:end}
+.tag{grid-column:1/9;color:var(--cr)}
+.act{grid-column:9/13;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:12px;padding-bottom:.2em}
+
+.game{padding-top:var(--sp);padding-bottom:calc(var(--sp) + 24px)}
+.big{font-size:var(--L);line-height:.86;letter-spacing:-.022em;color:var(--ox);margin-left:-.04em}
+.stage{margin-top:clamp(56px,6.4vw,96px);align-items:start}
+.gl{grid-column:1/5;padding-top:4px}
+.lede{font-size:20px;line-height:1.45;max-width:21em}
+.lede+.lede{margin-top:18px}
+.five{margin-top:clamp(40px,4vw,56px)}
+.five h3{font-family:var(--hf);font-weight:900;font-size:19px;letter-spacing:0}
+.five ol{list-style:none;padding:0;margin:16px 0 0;display:flex;gap:10px}
+.five li{display:flex;flex-direction:column;align-items:center;gap:8px;width:64px;font-size:15px;font-weight:600;line-height:1}
+.five svg{display:block;width:64px;height:64px}
+.five .now span{font-weight:800}
+.five .dot{fill:var(--ox)}
+.five .now .dot{fill:var(--cr);stroke:var(--ink);stroke-width:4}
+.five text{font-family:var(--hf);font-weight:900;font-size:40px;fill:var(--cr)}
+.five .now text{fill:var(--ink)}
+.five .note{margin-top:14px;font-size:15px;line-height:1.4}
+
+.deck{grid-column:5/13;position:relative}
+.deck::before,.deck::after{content:"";position:absolute;left:28px;right:28px;bottom:-14px;height:40px;border-radius:0 0 28px 28px;background:#F7B9A6}
+.deck::after{left:56px;right:56px;bottom:-28px;background:#F19A82;z-index:0}
+.deck::before{z-index:1}
+.card{position:relative;z-index:2;background:var(--cr);color:var(--ink);border-radius:32px;padding:clamp(24px,3.6vw,52px)}
+.who{display:flex;align-items:center;gap:clamp(18px,2.2vw,32px)}
+.face{flex:none;display:flex;align-items:center;justify-content:center;width:clamp(84px,9.2vw,132px);height:clamp(84px,9.2vw,132px);border-radius:50%;background:var(--tom);color:var(--ink);font-family:var(--hf);font-weight:900;font-size:clamp(32px,3.5vw,50px);letter-spacing:-.02em;line-height:1}
+.cname{font-size:clamp(44px,5.8vw,84px);line-height:.9}
+.crole{margin-top:10px;font-size:clamp(18px,1.5vw,22px);font-weight:600;color:var(--mute)}
+.ask{margin-top:clamp(32px,3.4vw,48px);font-size:18px;font-weight:650}
+.field{position:relative;margin-top:12px;background:var(--tint);border-radius:22px;padding:22px 100px 20px 26px}
+.say{font-size:clamp(21px,2vw,29px);font-weight:600;line-height:1.26;letter-spacing:-.012em}
+.heard{margin-top:10px;font-size:16px;font-weight:600;color:var(--mute)}
+.mic{position:absolute;right:20px;top:50%;margin-top:-30px;width:60px;height:60px;border-radius:50%;background:var(--ox);color:var(--cr);display:flex;align-items:center;justify-content:center}
+.mic svg{width:26px;height:26px}
+.crow{display:flex;align-items:center;justify-content:flex-end;gap:12px;margin-top:24px}
+.cb{display:inline-flex;align-items:center;font-family:var(--hf);font-weight:900;font-size:21px;min-height:62px;padding:0 32px;border-radius:999px;color:var(--ink);background:var(--li)}
+.cb.line{background:transparent;box-shadow:inset 0 0 0 3px var(--ink)}
+
+.safe{padding-top:var(--sp);padding-bottom:var(--sp)}
+.sg{align-items:center}
+.sl{grid-column:1/7}
+.sl h2{color:var(--ox)}
+.sl .lede{margin-top:28px}
+.done{grid-column:8/13;--tk-gone:#DCC3AE}
+.done .tk{width:100%;max-width:420px;height:auto}
+.done figcaption{margin-top:20px}
+.done b{display:block;font-family:var(--hf);font-weight:900;font-size:clamp(24px,2.1vw,30px);line-height:1.05;color:var(--ox)}
+.done span{display:block;margin-top:6px;font-size:17px;color:var(--mute);font-weight:600}
+
+.close{padding-top:var(--sp)}
+.close h2{color:var(--tom);font-size:var(--M);line-height:.98}
+.ways{margin-top:clamp(44px,4.4vw,64px);row-gap:48px}
+.way{grid-column:span 6;border-top:2px solid rgba(255,244,230,.3);padding-top:22px;scroll-margin-top:24px}
+.way h3{font-family:var(--hf);font-weight:900;font-size:clamp(24px,2.1vw,30px);line-height:1.05;letter-spacing:-.008em}
+.way ol{list-style:none;padding:0;margin-top:20px;counter-reset:st;max-width:30em}
+.way li{position:relative;counter-increment:st;padding-left:2.1em;font-size:18px;line-height:1.45;color:rgba(255,244,230,.88)}
+.way li+li{margin-top:14px}
+.way li::before{content:counter(st);position:absolute;left:0;top:-.08em;font-family:var(--hf);font-weight:900;font-size:22px;color:var(--tom)}
+.way strong{color:var(--cr);font-weight:700}
+.pg code{font-family:var(--mf);font-size:.88em;overflow-wrap:anywhere;background:rgba(255,244,230,.12);color:var(--cr);padding:.15em .45em;border-radius:6px}
+.try{margin-top:clamp(40px,4vw,56px);font-size:18px;color:rgba(255,244,230,.88);max-width:36em}
+.foot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 32px;margin-top:var(--sp);padding-top:24px;padding-bottom:30px;border-top:1px solid rgba(255,244,230,.2);font-size:16px;color:rgba(255,244,230,.8)}
+.foot a{color:var(--cr);font-weight:600;text-underline-offset:5px;text-decoration-thickness:2px}
+.foot nav{display:flex;gap:28px}
+
+@media (max-width:720px){
+.pg{font-size:17px}
+.g{grid-template-columns:minmax(0,1fr);row-gap:28px}
+.pg .g>*{grid-column:1/-1}
+.top{font-size:15px}
+.top nav{gap:20px}
+.logo .tk{width:38px;height:38px}
+.mark{font-size:28vw}
+.hg{margin-top:40px}
+.act{justify-content:flex-start;flex-direction:column;align-items:stretch}
+.btn{width:100%}
+.stage{row-gap:48px}
+.lede{font-size:18px}
+.five ol{gap:8px}
+.five li{width:auto;flex:1}
+.five svg{width:100%;height:auto;max-width:60px}
+.deck::before{left:16px;right:16px}
+.deck::after{left:32px;right:32px}
+.card{padding:24px 18px 20px;border-radius:24px}
+.face{width:68px;height:68px;font-size:26px}
+.cname{font-size:40px}
+.crole{font-size:17px}
+.field{padding:14px 70px 14px 16px}
+.say{font-size:20px}
+.heard{font-size:14px}
+.mic{width:46px;height:46px;right:12px;margin-top:-23px}
+.crow{justify-content:space-between}
+.cb{padding:0 20px;flex:1;justify-content:center}
+.done .tk{max-width:260px}
+.ways{row-gap:40px}
+.way li{font-size:17px}
+.foot{flex-direction:column;align-items:flex-start;font-size:15px}
+}
 </style>
+</head>
+<body>
+<div class="pg">
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<symbol id="turkey" viewBox="-7 -5 98 84">
+<g transform="rotate(-65 44 50)"><ellipse style="fill:var(--tk-gone,var(--tk-keep,#E9573B))" cx="44" cy="20" rx="6.5" ry="17"></ellipse></g>
+<g transform="rotate(-32.5 44 50)"><ellipse style="fill:var(--tk-keep,#E9573B)" cx="44" cy="20" rx="6.5" ry="17"></ellipse></g>
+<ellipse style="fill:var(--tk-gone,var(--tk-keep,#E9573B))" cx="44" cy="20" rx="6.5" ry="17"></ellipse>
+<g transform="rotate(32.5 44 50)"><ellipse style="fill:var(--tk-keep,#E9573B)" cx="44" cy="20" rx="6.5" ry="17"></ellipse></g>
+<g transform="rotate(65 44 50)"><ellipse style="fill:var(--tk-gone,var(--tk-keep,#E9573B))" cx="44" cy="20" rx="6.5" ry="17"></ellipse></g>
+<path style="fill:none;stroke:var(--tk-line,#4A1410);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round" d="M38 66v6M50 66v6M34 72h8M46 72h8"></path>
+<circle style="fill:var(--tk-body,#FFF4E6);stroke:var(--tk-line,#4A1410);stroke-width:2.5" cx="44" cy="50" r="17"></circle>
+<path style="fill:none;stroke:var(--tk-line,#4A1410);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round" d="M34 50c2 8 12 9 16 2"></path>
+<path style="fill:none;stroke:var(--tk-body,#FFF4E6);stroke-width:9;stroke-linecap:round" d="M56 46c4-4 6-9 6-14"></path>
+<circle style="fill:var(--tk-body,#FFF4E6);stroke:var(--tk-line,#4A1410);stroke-width:2.5" cx="63" cy="28" r="8"></circle>
+<circle style="fill:var(--tk-line,#4A1410)" cx="65.5" cy="26" r="1.6"></circle>
+<path fill="#E9573B" d="M70 25l9 3-9 1zM70 29l8 0-8 3z"></path>
+<path fill="#E9573B" d="M69 32c3 0 4 3 2 6-2 0-3-3-2-6z"></path>
+</symbol>
+</svg>
+
+<header class="ox">
+<div class="w top">
+<a class="logo" href="/" aria-label="Gobbler, home"><svg class="tk" aria-hidden="true"><use href="#turkey"></use></svg><span>A plugin for Claude and ChatGPT</span></a>
+<nav aria-label="Page"><a href="#how">How it works</a><a href="#install">Install</a></nav>
+</div>
+</header>
+
 <main>
-  <h1>Gobbler 🦃</h1>
-  <p class="tagline">Never forget anyone, but only remember who you care about.</p>
+<section class="ox hero">
+<div class="w">
+<h1 class="mark">Gobbler<svg class="bite" aria-hidden="true" viewBox="-10 -10 220 220"><circle cx="100" cy="100" r="66"></circle><circle cx="162" cy="100" r="44"></circle><circle cx="132.9" cy="152.6" r="40"></circle><circle cx="70.9" cy="154.7" r="46"></circle><circle cx="38" cy="97.8" r="40"></circle><circle cx="67.1" cy="47.4" r="45"></circle><circle cx="129.1" cy="45.3" r="41"></circle></svg></h1>
+<div class="g hg">
+<p class="h M tag"><span>Never forget anyone.</span><span>Only remember</span><span>who you care about.</span></p>
+<div class="act">
+<a class="btn" href="#claude">Add to Claude</a>
+<a class="btn line" href="#chatgpt">Add to ChatGPT</a>
+</div>
+</div>
+</div>
+</section>
 
-  <p>Your contacts are full of people you no longer know, and a few you never properly thanked. Gobbler shows you five a day inside Claude or ChatGPT. Say what you're grateful for to keep them, or let them go. We save a copy of everyone first, so nobody is ever truly lost.</p>
+<section class="tm game" id="how" aria-labelledby="gob-game">
+<div class="w">
+<h2 class="h big" id="gob-game"><span>Like five a day.</span><span>But people.</span></h2>
+<div class="g stage">
+<div class="gl">
+<p class="lede">Every day Gobbler serves up five people from your Google Contacts, right in the chat.</p>
+<p class="lede">Keep someone by saying what you’re grateful for, typed or out loud. Let go and they leave your contacts. Five and you’re done.</p>
+<div class="five">
+<h3>Today’s five</h3>
+<ol>
+<li><svg viewBox="0 0 100 100" aria-hidden="true"><mask id="gob-bit" maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100"><rect width="100" height="100" fill="#fff"></rect><g transform="translate(88 12) scale(.34) translate(-100 -100)" fill="#000"><circle cx="100" cy="100" r="66"></circle><circle cx="162" cy="100" r="44"></circle><circle cx="132.9" cy="152.6" r="40"></circle><circle cx="70.9" cy="154.7" r="46"></circle><circle cx="38" cy="97.8" r="40"></circle><circle cx="67.1" cy="47.4" r="45"></circle><circle cx="129.1" cy="45.3" r="41"></circle></g></mask><g mask="url(#gob-bit)"><circle class="dot" cx="50" cy="50" r="48"></circle><text x="47" y="64" text-anchor="middle">A</text></g></svg><span>Abi</span></li>
+<li class="now"><svg viewBox="0 0 100 100" aria-hidden="true"><circle class="dot" cx="50" cy="50" r="46"></circle><text x="50" y="64" text-anchor="middle">B</text></svg><span>Bao</span></li>
+<li><svg viewBox="0 0 100 100" aria-hidden="true"><circle class="dot" cx="50" cy="50" r="48"></circle><text x="50" y="64" text-anchor="middle">C</text></svg><span>Chris</span></li>
+<li><svg viewBox="0 0 100 100" aria-hidden="true"><circle class="dot" cx="50" cy="50" r="48"></circle><text x="50" y="64" text-anchor="middle">D</text></svg><span>Dee</span></li>
+<li><svg viewBox="0 0 100 100" aria-hidden="true"><circle class="dot" cx="50" cy="50" r="48"></circle><text x="50" y="64" text-anchor="middle">E</text></svg><span>Emma</span></li>
+</ol>
+<p class="note">Abi’s been gobbled. Bao’s up.</p>
+</div>
+</div>
+<div class="deck">
+<div class="card" role="img" aria-label="An example of Gobbler in a chat. Bao Nguyen, Year 9 English teacher. What are you grateful to Bao for? She told me my writing was worth reading. Buttons: Let go, Keep Bao.">
+<div class="who">
+<span class="face">BN</span>
+<div>
+<p class="h cname">Bao Nguyen</p>
+<p class="crole">Year 9 English teacher</p>
+</div>
+</div>
+<p class="ask">What are you grateful to Bao for?</p>
+<div class="field"><p class="say">She told me my writing was worth reading.</p><p class="heard">Said out loud, 6 seconds</p><span class="mic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0"></path><path d="M12 18v3"></path></svg></span></div>
+<div class="crow"><span class="cb line">Let go</span><span class="cb">Keep Bao</span></div>
+</div>
+</div>
+</div>
+</div>
+</section>
 
-  <h2>Add it to Claude</h2>
-  <div class="card">
-    <ol>
-      <li>Settings, then Connectors, then <strong>Add custom connector</strong>.</li>
-      <li>Name it Gobbler and paste <code>https://gobbler.build40for40.com/mcp</code></li>
-      <li>Click Connect and sign in with Google. Google says the app isn't verified yet: click Advanced, then continue.</li>
-      <li>In a new chat, switch Gobbler on and say <strong>Let's Gobble</strong>.</li>
-    </ol>
-  </div>
+<section class="safe" aria-labelledby="gob-safe">
+<div class="w g sg">
+<div class="sl">
+<h2 class="h M" id="gob-safe"><span>Nobody is</span><span>ever lost.</span></h2>
+<p class="lede">Let someone go and they leave your Google Contacts. We still save them in the background, so if you ever need them again, they’re there.</p>
+<p class="lede">Nothing is sent to anyone. Bao doesn’t get a ping. The thank you is yours to say.</p>
+</div>
+<figure class="done">
+<svg class="tk" viewBox="-7 -5 98 84" role="img" aria-label="The Gobbler turkey. Its tail has five feathers, two bright and three pale."><use href="#turkey"></use></svg>
+<figcaption><b>That’s your five. Well gobbled.</b><span>2 thanked, 3 let go. A feather for each.</span></figcaption>
+</figure>
+</div>
+</section>
 
-  <h2>Add it to ChatGPT</h2>
-  <div class="card">
-    <ol>
-      <li>Settings, then Apps and Connectors, then Advanced, and turn on <strong>Developer mode</strong>.</li>
-      <li>Create an app with the same address, choose OAuth, and sign in with Google.</li>
-      <li>In a new chat, pick Gobbler and say <strong>Let's Gobble</strong>.</li>
-    </ol>
-  </div>
-
-  <p>Want a go without signing in? Use <code>https://gobbler.build40for40.com/demo/mcp</code> for made-up contacts.</p>
-
-  <footer>
-    Built live on day 19 of <a href="https://build40for40.com">40 for 40</a>. <a href="/privacy">Privacy</a>
-  </footer>
+<section class="ox close" id="install" aria-labelledby="gob-install">
+<div class="w">
+<h2 class="h" id="gob-install">Your five are waiting.</h2>
+<div class="g ways">
+<div class="way" id="claude">
+<h3>Add it to Claude</h3>
+<ol>
+<li>Settings, then Connectors, then <strong>Add custom connector</strong>.</li>
+<li>Name it Gobbler and paste <code>https://gobbler.build40for40.com/mcp</code></li>
+<li>Click Connect and sign in with Google. Google says the app isn’t verified yet: click Advanced, then continue.</li>
+<li>In a new chat, switch Gobbler on and say <strong>Let’s Gobble</strong>.</li>
+</ol>
+</div>
+<div class="way" id="chatgpt">
+<h3>Add it to ChatGPT</h3>
+<ol>
+<li>Settings, then Apps and Connectors, then Advanced, and turn on <strong>Developer mode</strong>.</li>
+<li>Create an app with the same address, choose OAuth, and sign in with Google.</li>
+<li>In a new chat, pick Gobbler and say <strong>Let’s Gobble</strong>.</li>
+</ol>
+</div>
+</div>
+<p class="try">Want a go without signing in? Use <code>https://gobbler.build40for40.com/demo/mcp</code> for made-up contacts.</p>
+<footer class="foot">
+<p>Built in a day, live on Twitch, as Day 19 of 40 for 40.</p>
+<nav aria-label="Footer"><a href="/privacy">Privacy</a><a href="https://build40for40.com">build40for40.com</a></nav>
+</footer>
+</div>
+</section>
 </main>
+
+</div>
+</body>
 </html>
