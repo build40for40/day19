@@ -40,6 +40,17 @@ describe("worker", () => {
     const started = await json(await rpc("tools/call", { name: "reset_demo", arguments: {} }, 2));
     expect(started.result.structuredContent.contacts).toHaveLength(5);
     expect(started.result.structuredContent.contacts[0].name).toBe("Agnes Okafor");
+
+    // Finishing the round tells the assistant to draft, and each kept contact is drafted once.
+    const five = started.result.structuredContent.contacts as { id: string }[];
+    let last;
+    for (const [i, c] of five.entries()) last = await json(await rpc("tools/call", { name: "keep_contact", arguments: { id: c.id, gratitude: "teaching me mah jong" } }, 10 + i));
+    expect(last.result.content.map((part: { text: string }) => part.text).join(" ")).toContain("thank_you_notes");
+    const notes = await json(await rpc("tools/call", { name: "thank_you_notes", arguments: {} }, 20));
+    expect(notes.result.structuredContent.notes).toHaveLength(5);
+    expect(notes.result.content[0].text).toContain("I kept you.");
+    const again = await json(await rpc("tools/call", { name: "thank_you_notes", arguments: {} }, 21));
+    expect(again.result.structuredContent.notes).toHaveLength(0);
   });
 
   it("serves a plain home page and 404s the rest", async () => {

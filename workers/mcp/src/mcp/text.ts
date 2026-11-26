@@ -9,7 +9,7 @@ export const THANKS_PS =
 
 
 /** How to turn kept contacts into thank-you drafts. In the server instructions, and in every thank_you_notes result, since some chat apps don't show the model server instructions. */
-export const THANKS_BRIEF = `- Call ${THANKS_TOOL} for everyone kept, or with an id for one person. It returns each name, email and gratitude, and repeats these rules.
+export const THANKS_BRIEF = `- Call ${THANKS_TOOL}. With no arguments it returns everyone kept who has no draft yet; with an id, just that person; with all, everyone kept. It returns each name, email and gratitude, and repeats these rules.
 - Write one short email each, turning the gratitude into a simple, coherent thank-you: one to three plain sentences, warm and natural, in the first person, as if the person wrote it. Rephrase rough notes into proper sentences ("mah jong" becomes "teaching me mah jong"), but add no facts, memories or feelings they didn't give.
 - Give each one a short subject line, like "Thank you" or "A quick thank you".
 - End each email with this P.S., exactly as written, on its own line after the sign-off: "${THANKS_PS}" Leave it out only if the person asks. Tell them once that it's there and they can drop it.
@@ -30,7 +30,7 @@ Starting the game: the person's way in is "Let's Gobble". Call ${TOOL.start} str
 - Five a day is the habit, not a limit. When today's are done and the person asks for more ("five more", "keep going"), call ${TOOL.next} with more set to true, then ${TOOL.start}. Don't deal more unless they ask.
 - This server never sends anything to the contacts themselves.
 
-Thank-you emails, only when the person asks for them ("draft thank-yous", "write to Jeff", "email the people I kept"):
+Thank-you emails. Write them without asking first when a round is done: a ${TOOL.keep} or ${TOOL.letGo} result says today's contacts are done, or the person says they've finished their five. Also write them whenever the person asks ("draft thank-yous", "write to Jeff", "email the people I kept"). Drafts are never sent, so there's nothing to confirm:
 ${THANKS_BRIEF}`
 
 export const TEXT = {
@@ -66,8 +66,9 @@ export const TEXT = {
   thanks: {
     title: 'Thank-you notes',
     description:
-      "Call this when the person asks to draft, write or send thank-you emails or notes to the people they kept in Gobbler. Returns everyone kept, newest first, with their email addresses and what the person is grateful to them for, plus the rules for writing the drafts. Then write each email and save it as a draft with the person's email tool (such as Gmail). Never send it.",
-    id: 'Only this contact. Leave it out for everyone kept.',
+      "Call this as soon as a round of Gobbler is done (a keep or let go result says so, or the person says they've finished), without asking, and whenever the person asks for thank-you emails or notes to the people they kept. Returns everyone kept who has no draft yet, newest first, with their email addresses and what the person is grateful to them for, plus the rules for writing the drafts. Then write each email and save it as a draft with the person's email tool (such as Gmail). Never send it.",
+    id: 'Only this contact, drafted again even if it already has one.',
+    all: 'Everyone kept, including those who already have a draft.',
   },
   reset: {
     title: 'Reset the demo',
@@ -107,6 +108,9 @@ export function batchText({ contacts, progress, doneForToday }: Batch): string {
   const lines = contacts.map((contact) => `- ${contact.name} (id ${contact.id}${contact.organisation ? `, ${contact.organisation}` : ''})`)
   return [`${contacts.length} still to decide today. ${progressText(progress)}`, ...lines].join('\n')
 }
+
+/** Added to a keep or let go result when it finishes the round, so the assistant drafts the thank-yous. */
+export const ROUND_DONE = `That's today's contacts done. Now call ${THANKS_TOOL} and save a Gmail draft for each new thank-you, without asking first.`
 
 export const decidedText = ({ decision, progress }: Decided) =>
   `${decision === 'kept' ? 'Kept, and the gratitude is saved in the Brain.' : 'Let go. A copy is in the Brain.'} ${progressText(progress)}`

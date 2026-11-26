@@ -247,8 +247,8 @@ export class Brain extends DurableObject<Env> {
     return (await this.game(accessToken)).brain()
   }
 
-  async thankYous(id?: string, accessToken?: string): Promise<ThankYou[]> {
-    return (await this.game(accessToken)).thankYous(id)
+  async thankYous(options: { id?: string; all?: boolean }, accessToken?: string): Promise<ThankYou[]> {
+    return (await this.game(accessToken)).thankYous(options)
   }
 
   /** Demo only: puts every made-up contact back and empties the Brain. Never wipes a signed-in Brain. */
