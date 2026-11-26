@@ -1,0 +1,15 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "day19",
+  "account_id": "9b4d3e616e55585a0ae844f424717b43",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-11-01",
+  "compatibility_flags": ["nodejs_compat"],
+  // The widget is one built HTML file, bundled into the Worker as text.
+  "rules": [{ "type": "Text", "globs": ["**/*.html"], "fallthrough": true }],
+  "durable_objects": { "bindings": [{ "name": "BRAINS", "class_name": "Brain" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Brain"] }],
+  "workers_dev": true,
+  "preview_urls": true,
+  "observability": { "enabled": true }
+}

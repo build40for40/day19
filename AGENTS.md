@@ -7,6 +7,30 @@ Day 19 of 40 for 40, built live on Twitch on Thursday 26 November 2026. The prob
 
 Shared 40 for 40 context lives in `../AGENTS.md`.
 
+## Stack
+
+- One Cloudflare Worker (`src/index.ts`) serving an MCP server at `/mcp`, built with `@modelcontextprotocol/server` and `agents/mcp/server`, like Day 15.
+- The widget is an MCP App (`@modelcontextprotocol/ext-apps`): `widget/` builds with Vite into one file, `dist/widget.html`, which the Worker bundles as text and serves as the `ui://day19/contacts.html` resource. It renders in Claude and ChatGPT.
+- `src/game.ts` holds the rules (five a day, delete or keep with gratitude, the Brain as markdown) with no Cloudflare in it, so it tests in plain Node.
+- `src/brain.ts` is a Durable Object, one per person, that stores their decisions and today's five.
+- `src/contacts.ts` has the `ContactSource` interface and the made-up demo contacts. **Google sign-in and the People API aren't built yet**: implement `ContactSource` for Google and give each signed-in person their own Brain (`DEMO_USER` in `src/env.ts` is the one shared Brain until then).
+
+## Tools
+
+- `todays_contacts`: opens the widget with today's five.
+- `keep_contact` and `delete_contact`: used by the widget's buttons, and by the assistant when the person decides out loud. That's the dependable voice route.
+- `read_brain`: the Brain as markdown.
+- `reset_demo`: demo only, puts the made-up contacts back.
+
+The widget also has a Speak button (the browser's speech to text). It asks the host for the microphone, and falls back to typing where the host says no.
+
+## Commands
+
+- `npm run dev`: builds the widget and runs the Worker at http://localhost:8799.
+- `npm run host`: a small stand-in for Claude at http://localhost:5199 that shows the widget and talks to the dev Worker. Run it alongside `npm run dev`. Rebuild with `npm run build:widget` after changing the widget.
+- `npm test`, `npm run typecheck`, `npm run build` (the widget build must run before typecheck and tests on a fresh clone, since the Worker imports `dist/widget.html`).
+- `npm run deploy`, and wrangler as `npm run wrangler -- <args>`, never `npx wrangler`.
+
 ## The problem
 
 Gratitude stays unsaid
