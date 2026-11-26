@@ -1,0 +1,36 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "day19-mcp",
+  "account_id": "9b4d3e616e55585a0ae844f424717b43",
+  "compatibility_date": "2026-11-04",
+  // agents/mcp/server uses AsyncLocalStorage.
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "src/index.ts",
+
+  // The URL MCP clients connect to. Every token is bound to it.
+  // Local dev overrides it in .dev.vars with http://localhost:8788/mcp.
+  "vars": {
+    "MCP_RESOURCE": "https://day19-mcp.40for40.workers.dev/mcp"
+  },
+  "secrets": {
+    "required": ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"]
+  },
+
+  // Sign-in state: registered clients, grants and tokens (hashed), consent handles.
+  // Wrangler creates the namespace on first deploy.
+  "kv_namespaces": [{ "binding": "OAUTH_KV" }],
+
+  // The brain: one Durable Object per Google account.
+  "durable_objects": {
+    "bindings": [{ "name": "BRAIN", "class_name": "Brain" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Brain"] }],
+
+  // The Google redirect URI for local dev is http://localhost:8788/callback.
+  "dev": { "port": 8788 },
+
+  // Served on workers.dev until the app has a name and its own subdomain.
+  "workers_dev": true,
+  "preview_urls": false,
+  "observability": { "enabled": true }
+}

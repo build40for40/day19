@@ -1,0 +1,12 @@
+{
+  "name": "day19",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.6.0",
+  "scripts": {
+    "dev": "pnpm --filter @day19/mcp dev",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck"
+  }
+}

@@ -1,0 +1,7 @@
+# Copy to .dev.vars (git-ignored) and fill in from the Google Cloud console:
+# Google Auth Platform > Clients > "day19 worker".
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+
+# Local dev only: tokens are bound to the URL the MCP client connects to.
+MCP_RESOURCE=http://localhost:8788/mcp

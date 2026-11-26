@@ -1,0 +1,27 @@
+{
+  "name": "@day19/mcp",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The Day 19 MCP server: Google sign-in, the contacts brain and the tools Claude and ChatGPT call.",
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm wrangler dev",
+    "deploy": "pnpm wrangler deploy",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "types": "wrangler types --env-interface Env",
+    "wrangler": "env -u CLOUDFLARE_API_KEY -u CLOUDFLARE_EMAIL wrangler --profile 40for40"
+  },
+  "dependencies": {
+    "@cloudflare/workers-oauth-provider": "1.3.0",
+    "@modelcontextprotocol/server": "2.4.0",
+    "agents": "0.34.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-plugin": "^1.9.2",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.2",
+    "wrangler": "^4.168.0"
+  }
+}
