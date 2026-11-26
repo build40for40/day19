@@ -27,6 +27,7 @@ Written by Samira on the day.
 - For each contact there are two options:
   1. **Delete the contact.** It gets deleted from the Google Contacts list, but it is stored in the "Brain" (a markdown file) first.
   2. **Keep the contact.** To keep it I have to fill out a short text box saying what I'm grateful for. The contact stays in Google Contacts, and the gratitude is saved into the Brain with the contact.
+- The gratitude can be typed or spoken. Voice input fills the same box.
 
 ## What we're building
 
