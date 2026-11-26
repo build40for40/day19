@@ -454,11 +454,6 @@ button:active {
   fill: var(--line-strong);
 }
 
-/* The tail when the widget didn't see today's five, so no feather stands for anyone. */
-.feather.plain {
-  fill: color-mix(in srgb, var(--treat) 55%, var(--bg-soft));
-}
-
 @keyframes fan {
   from {
     transform: scale(0);

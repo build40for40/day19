@@ -54,22 +54,14 @@ function buzz(pattern: number | number[]) {
   }
 }
 
-/**
- * The turkey on the done screen. Its tail has one feather for each of today's contacts, gold for someone thanked and
- * grey for someone let go (or a plain fan of five when this widget saw none of them), and it gobbles up the crumbs. Only the kind of each outcome goes into the drawing, never
- * a name or anything else from the contacts, so it is safe to set as HTML.
- */
-function turkey(kinds: Array<Outcome['kind'] | undefined>) {
-  // Opened after the day was done, there's nobody to count, but a turkey without its tail is just a bird.
-  const tail = kinds.length ? kinds : Array<'plain'>(BATCH_SIZE).fill('plain')
-  const spread = tail.length > 1 ? 100 / (tail.length - 1) : 0
-  const feathers = tail
-    .map((kind, i) => {
-      const angle = tail.length > 1 ? -80 + spread * i : 0
-      const colour = kind === 'plain' ? 'plain' : kind === 'kept' ? 'thanked' : 'gone'
-      return `<g transform="rotate(${angle.toFixed(1)} 44 50)"><ellipse class="feather ${colour}" style="animation-delay:${150 + i * 110}ms" cx="44" cy="29" rx="4.5" ry="10"/></g>`
-    })
-    .join('')
+/** The turkey on the done screen: a small four-feather tail, gold and grey, and it gobbles up the crumbs. */
+const TAIL = ['thanked', 'gone', 'thanked', 'gone']
+
+function turkey() {
+  const feathers = TAIL.map(
+    (colour, i) =>
+      `<g transform="rotate(${-75 + 30 * i} 44 50)"><ellipse class="feather ${colour}" style="animation-delay:${150 + i * 110}ms" cx="44" cy="27" rx="4.5" ry="12.5"/></g>`,
+  ).join('')
   const bird = h('div', { class: 'turkey' })
   bird.innerHTML = `<svg viewBox="0 0 104 76" width="104" height="76" aria-hidden="true">
   ${feathers}
@@ -402,7 +394,7 @@ function done(contacts: Contact[]) {
   return h(
     'div',
     { class: 'card deal done' },
-    turkey(contacts.map((contact) => outcomes.get(contact.id)?.kind)),
+    turkey(),
     h('p', { class: 'done-title' }, contacts.length ? `That's your ${contacts.length === BATCH_SIZE ? 'five' : 'lot'}. Well gobbled.` : "That's today done"),
     h('p', { class: 'done-body' }, contacts.length ? `${kept.length} thanked, ${letGo.length} let go.` : left > 0 ? 'More tomorrow, or go again now.' : 'Your list is clean.'),
     ...thanks,
