@@ -1,16 +1,17 @@
-# Day 19
+# Gobbler (Day 19)
 
 Day 19 of 40 for 40, built live on Twitch on Thursday 26 November 2026. The problem is "Gratitude stays unsaid", from a submitter shown on the site as "The". Work is tracked on the Superthread `day19` board and the "Day 19" page.
 
 - **Form factor:** a Claude and ChatGPT plugin (MCP).
-- **Name:** TBC. The repo stays `day19` until the app has a name, then it's renamed and served at `build40for40.com/<app>/`.
+- **Name:** Gobbler, served at `build40for40.com/gobbler/`. The landing page is there and the MCP server is at `build40for40.com/gobbler/mcp`. The repo and the Worker are still called `day19`.
 
 Shared 40 for 40 context lives in `../AGENTS.md`.
 
 ## Stack
 
-- One Cloudflare Worker (`src/index.ts`) serving an MCP server at `/mcp`, built with `@modelcontextprotocol/server` and `agents/mcp/server`, like Day 15.
-- The widget is an MCP App (`@modelcontextprotocol/ext-apps`): `widget/` builds with Vite into one file, `dist/widget.html`, which the Worker bundles as text and serves as a `ui://day19/contacts-<hash>.html` resource (the hash changes with each build, so chat apps don't show a stale copy). It renders in Claude and ChatGPT.
+- One Cloudflare Worker (`src/index.ts`) serving an MCP server at `/mcp`, built with `@modelcontextprotocol/server` and `agents/mcp/server`, like Day 15. On build40for40.com it's reached through the `build40for40.com/gobbler` and `/gobbler/*` routes in `wrangler.jsonc`, so the Worker strips `/gobbler` (`BASE_PATH` in `src/env.ts`) before matching `/mcp` and `/transcribe`. workers.dev and local dev serve the same paths without it.
+- **The landing page is Ben's.** `landing/` is the Worker's static assets folder, served as it is: `landing/gobbler/index.html` is `build40for40.com/gobbler/`, and anything else he needs (CSS, images) goes next to it in `landing/gobbler/`. It deploys with the Worker. Today it's a placeholder. Don't add files named `mcp` or `transcribe` there, since a file wins over the Worker.
+- The widget is an MCP App (`@modelcontextprotocol/ext-apps`): `widget/` builds with Vite into one file, `dist/widget.html`, which the Worker bundles as text and serves as a `ui://gobbler/contacts-<hash>.html` resource (the hash changes with each build, so chat apps don't show a stale copy). It renders in Claude and ChatGPT.
 - `src/contract.ts` is the shared contract below as TypeScript types and tool names. The widget and the server both import it. `src/mcp/schemas.ts` is the same thing as zod schemas.
 - `src/game.ts` holds the rules (five a day, let go or keep with gratitude, the Brain as markdown) with no Cloudflare in it, so it tests in plain Node and also runs inside the widget's fake mode.
 - `src/brain.ts` is a Durable Object, one per person, that stores their decisions and today's five.

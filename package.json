@@ -1,8 +1,8 @@
 {
-  "name": "day19",
+  "name": "gobbler",
   "version": "0.0.0",
   "private": true,
-  "description": "Day 19 of 40 for 40: five contacts a day, delete or keep with gratitude, as an MCP App.",
+  "description": "Gobbler, Day 19 of 40 for 40: five contacts a day, delete or keep with gratitude, as an MCP App.",
   "type": "module",
   "scripts": {
     "dev": "npm run build:widget && npm run wrangler -- dev --port 8799",

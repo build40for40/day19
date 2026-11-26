@@ -11,9 +11,9 @@ import * as schema from './schemas'
 import { BRAIN_TOOL, batchText, decidedText, progressText, RESET_TOOL, SERVER_INSTRUCTIONS, SERVER_NAME, TEXT } from './text'
 
 // Chat apps cache the widget by its address, so the address changes whenever the built widget does.
-const WIDGET_URI = `ui://day19/contacts-${[...widgetHtml].reduce((hash, char) => (Math.imul(hash, 31) + char.charCodeAt(0)) >>> 0, 7).toString(36)}.html`
+const WIDGET_URI = `ui://gobbler/contacts-${[...widgetHtml].reduce((hash, char) => (Math.imul(hash, 31) + char.charCodeAt(0)) >>> 0, 7).toString(36)}.html`
 
-const API_PLACEHOLDER = '__DAY19_TRANSCRIBE_URL__'
+const API_PLACEHOLDER = '__GOBBLER_TRANSCRIBE_URL__'
 
 const text = (value: string) => [{ type: 'text' as const, text: value }]
 
@@ -27,7 +27,8 @@ const decidedResult = (result: Outcome<Decided>) =>
     : { content: text(result.error), isError: true }
 
 /** A fresh server per request. All state lives in the person's Brain. */
-export function createServer(env: Env, user: string, origin: string): McpServer {
+/** `base` is the address the Worker was reached at, like https://build40for40.com/gobbler, so voice clips go back the same way. */
+export function createServer(env: Env, user: string, base: string): McpServer {
   const brain = env.BRAINS.get(env.BRAINS.idFromName(user))
   const server = new McpServer({ name: SERVER_NAME, version: '0.2.0' }, { instructions: SERVER_INSTRUCTIONS })
 
@@ -137,11 +138,11 @@ export function createServer(env: Env, user: string, origin: string): McpServer 
         uri: WIDGET_URI,
         mimeType: RESOURCE_MIME_TYPE,
         // The widget is told where to send voice clips, and the chat app is asked to let it.
-        text: widgetHtml.replace(API_PLACEHOLDER, `${origin}${TRANSCRIBE_PATH}`),
+        text: widgetHtml.replace(API_PLACEHOLDER, `${base}${TRANSCRIBE_PATH}`),
         _meta: {
           ui: {
             // Contact photos come from Google's image host. Nothing else loads from outside the widget.
-            csp: { resourceDomains: ['https://lh3.googleusercontent.com'], connectDomains: [origin] },
+            csp: { resourceDomains: ['https://lh3.googleusercontent.com'], connectDomains: [new URL(base).origin] },
             // The mic is for speaking the gratitude. Hosts may refuse it, and the widget falls back to typing.
             permissions: { microphone: {} },
             prefersBorder: false,
@@ -154,9 +155,11 @@ export function createServer(env: Env, user: string, origin: string): McpServer 
   return server
 }
 
-export function handleMcp(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-  const handler = createMcpHandler(() => createServer(env, DEMO_USER, new URL(request.url).origin), {
-    route: MCP_PATH,
+/** `prefix` is '/gobbler' on build40for40.com and '' on workers.dev or local dev. */
+export function handleMcp(request: Request, env: Env, ctx: ExecutionContext, prefix = ''): Promise<Response> {
+  const base = new URL(request.url).origin + prefix
+  const handler = createMcpHandler(() => createServer(env, DEMO_USER, base), {
+    route: prefix + MCP_PATH,
     onerror: (error) => console.error('MCP request failed:', error.name),
   })
   return handler(request, env, ctx)

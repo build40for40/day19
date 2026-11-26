@@ -22,7 +22,7 @@ const slow = () => new Promise<never>((_, reject) => setTimeout(() => reject(new
 
 /** Sends the clip straight to the server. Returns nothing when the chat app blocks the request, so the caller can try another way. */
 async function post(audio: string, mimeType: string): Promise<Heard | undefined> {
-  const url = document.querySelector<HTMLMetaElement>('meta[name="day19-transcribe"]')?.content
+  const url = document.querySelector<HTMLMetaElement>('meta[name="gobbler-transcribe"]')?.content
   if (!url?.startsWith('http')) return undefined
   let response: Response
   try {

@@ -1,0 +1,30 @@
+<!doctype html>
+<!-- Placeholder. Ben owns the real landing page: replace this file (and add CSS, images and so on next to it in landing/gobbler/). -->
+<html lang="en-GB">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Gobbler</title>
+    <meta name="description" content="Five contacts a day. Keep them with a line of gratitude, or let them go." />
+    <style>
+      :root { color-scheme: light dark; --bg: #fffaf3; --fg: #2b1d12; --muted: #7a6656; --accent: #b4531f; }
+      @media (prefers-color-scheme: dark) { :root { --bg: #1d1510; --fg: #f6ece2; --muted: #b9a594; --accent: #f08a4b; } }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--bg); color: var(--fg); font: 18px/1.5 system-ui, sans-serif; }
+      main { max-width: 36rem; margin: 0 auto; padding: 3rem 16px; }
+      h1 { font-size: 2.5rem; margin: 0 0 0.5rem; }
+      p { margin: 0 0 1rem; }
+      .muted { color: var(--muted); font-size: 0.9rem; }
+      code { background: color-mix(in srgb, var(--accent) 15%, transparent); padding: 0.1em 0.35em; border-radius: 4px; overflow-wrap: anywhere; }
+      a { color: var(--accent); }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Gobbler 🦃</h1>
+      <p>Five contacts a day. Keep each one by saying what you're grateful for, or let them go.</p>
+      <p>To play, add <code>https://build40for40.com/gobbler/mcp</code> to Claude as a custom connector, then say "start the game".</p>
+      <p class="muted">Day 19 of <a href="https://build40for40.com">40 for 40</a>. A proper page is on its way.</p>
+    </main>
+  </body>
+</html>

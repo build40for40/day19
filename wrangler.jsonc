@@ -11,6 +11,15 @@
   "ai": { "binding": "AI" },
   "durable_objects": { "bindings": [{ "name": "BRAINS", "class_name": "Brain" }] },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Brain"] }],
+  // Ben's landing page. Files in landing/ are served as they are, so landing/gobbler/index.html is build40for40.com/gobbler/.
+  // Anything that isn't a file (/gobbler/mcp, /gobbler/transcribe) falls through to the Worker.
+  "assets": { "directory": "./landing" },
+  "routes": [
+    { "pattern": "build40for40.com/gobbler", "zone_name": "build40for40.com" },
+    { "pattern": "build40for40.com/gobbler/*", "zone_name": "build40for40.com" }
+  ],
+  // Without this, wrangler dev pretends requests came to build40for40.com and the widget would send clips to the live site.
+  "dev": { "host": "localhost:8799", "upstream_protocol": "http" },
   "workers_dev": true,
   "preview_urls": true,
   "observability": { "enabled": true }

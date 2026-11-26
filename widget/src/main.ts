@@ -26,7 +26,7 @@ type Outcome = { kind: 'kept'; gratitude: string } | { kind: 'let_go' } | { kind
 const fake = new URLSearchParams(location.search).has('fake') || window.parent === window
 
 const root = document.getElementById('app')!
-const app = new App({ name: 'Day 19 contacts', version: '0.2.0' })
+const app = new App({ name: 'Gobbler', version: '0.2.0' })
 const tools: Tools = fake ? fakeTools() : mcpTools(app)
 
 let batch: Contact[] | undefined

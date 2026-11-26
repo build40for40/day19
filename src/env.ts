@@ -5,6 +5,8 @@ export interface Env {
   AI: Ai
 }
 
+/** Where the app lives on build40for40.com. workers.dev and local dev serve the same paths without it. */
+export const BASE_PATH = '/gobbler'
 export const MCP_PATH = '/mcp'
 export const TRANSCRIBE_PATH = '/transcribe'
 
