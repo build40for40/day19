@@ -2,7 +2,6 @@ import { BATCH_SIZE, MAX_GRATITUDE, TOOL, type Batch, type Decided, type Progres
 
 export const SERVER_NAME = 'day19'
 
-export const WIDGET_URI = 'ui://day19/contacts.html'
 
 export const SERVER_INSTRUCTIONS = `This server is a daily game for cleaning up a contacts list with gratitude. Each day it surfaces ${BATCH_SIZE} contacts. Each one is either let go, or kept by saying what the person is grateful to them for. Everything is saved to the person's Brain, a markdown file, so nobody is ever lost.
 
@@ -38,6 +37,12 @@ export const TEXT = {
   progress: {
     title: 'Progress',
     description: 'Returns how many contacts have been decided so far, out of how many there are.',
+  },
+  transcribe: {
+    title: 'Speech to text',
+    description: "Turns a short voice recording from the widget's Speak button into text. Only the widget uses this.",
+    audio: 'The recording, base64 encoded.',
+    mimeType: 'The recording\'s type, like audio/webm.',
   },
   brain: {
     title: 'Read the Brain',

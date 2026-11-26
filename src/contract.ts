@@ -35,6 +35,11 @@ export interface Decided {
   progress: Progress
 }
 
+/** What `transcribe` returns. */
+export interface Heard {
+  text: string
+}
+
 export const TOOL = {
   /** Opens the widget. No arguments. Returns a Batch. */
   start: 'start_game',
@@ -46,8 +51,12 @@ export const TOOL = {
   letGo: 'let_go_contact',
   /** No arguments. Returns Progress. */
   progress: 'progress',
+  /** `{ audio, mimeType }`, audio as base64. Returns Heard. Only the widget calls this, for the Speak button. */
+  transcribe: 'transcribe',
 } as const
 
 export const BATCH_SIZE = 5
 export const MIN_GRATITUDE = 3
 export const MAX_GRATITUDE = 280
+/** The Speak button stops by itself after this long. */
+export const MAX_SPEAK_SECONDS = 30

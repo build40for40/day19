@@ -7,6 +7,8 @@
   "compatibility_flags": ["nodejs_compat"],
   // The widget is one built HTML file, bundled into the Worker as text.
   "rules": [{ "type": "Text", "globs": ["**/*.html"], "fallthrough": true }],
+  // Speech to text for the Speak button, when the chat app has a mic but no speech service of its own.
+  "ai": { "binding": "AI" },
   "durable_objects": { "bindings": [{ "name": "BRAINS", "class_name": "Brain" }] },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Brain"] }],
   "workers_dev": true,

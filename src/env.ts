@@ -2,6 +2,7 @@ import type { Brain } from './brain'
 
 export interface Env {
   BRAINS: DurableObjectNamespace<Brain>
+  AI: Ai
 }
 
 export const MCP_PATH = '/mcp'

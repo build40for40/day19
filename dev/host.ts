@@ -2,7 +2,6 @@
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client'
 import { AppBridge, PostMessageTransport } from '@modelcontextprotocol/ext-apps/app-bridge'
 
-const WIDGET_URI = 'ui://day19/contacts.html'
 const frame = document.getElementById('view') as HTMLIFrameElement
 const log = document.getElementById('log')!
 const note = (line: string) => (log.textContent = `${line}\n${log.textContent}`.slice(0, 2000))
@@ -14,7 +13,8 @@ let bridge: AppBridge | undefined
 
 async function run(tool: string) {
   await bridge?.close()
-  const resource = await client.readResource({ uri: WIDGET_URI })
+  const { resources } = await client.listResources()
+  const resource = await client.readResource({ uri: resources.find((entry) => entry.uri.startsWith('ui://'))!.uri })
   const html = resource.contents[0] && 'text' in resource.contents[0] ? resource.contents[0].text : ''
   const loaded = new Promise((resolve) => frame.addEventListener('load', resolve, { once: true }))
   frame.srcdoc = html

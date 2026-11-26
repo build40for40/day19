@@ -1,7 +1,7 @@
 import type { App } from '@modelcontextprotocol/ext-apps'
 
 import { DEMO_CONTACTS, type ContactSource } from '../../src/contacts'
-import { TOOL, type Batch, type Decided } from '../../src/contract'
+import { TOOL, type Batch, type Decided, type Heard } from '../../src/contract'
 import { Game, type GameState, type StateStore } from '../../src/game'
 
 /** The three things the widget asks the server to do. Everything it shows comes back from these. */
@@ -9,6 +9,8 @@ export interface Tools {
   next(): Promise<Batch>
   keep(id: string, gratitude: string, spoken: boolean): Promise<Decided>
   letGo(id: string): Promise<Decided>
+  /** Turns a recording into words. Missing in fake mode, which has no server to ask. */
+  transcribe?(audio: string, mimeType: string): Promise<Heard>
 }
 
 const SAVE_FAILED = "That didn't save. Try again."
@@ -27,6 +29,7 @@ export function mcpTools(app: App): Tools {
     next: () => call<Batch>(TOOL.next, {}),
     keep: (id, gratitude, spoken) => call<Decided>(TOOL.keep, { id, gratitude, spoken }),
     letGo: (id) => call<Decided>(TOOL.letGo, { id }),
+    transcribe: (audio, mimeType) => call<Heard>(TOOL.transcribe, { audio, mimeType }),
   }
 }
 

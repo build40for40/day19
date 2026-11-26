@@ -7,7 +7,10 @@ import type { Outcome } from '../brain'
 import { TOOL, type Batch, type Decided } from '../contract'
 import { DEMO_USER, MCP_PATH, type Env } from '../env'
 import * as schema from './schemas'
-import { BRAIN_TOOL, batchText, decidedText, progressText, RESET_TOOL, SERVER_INSTRUCTIONS, SERVER_NAME, TEXT, WIDGET_URI } from './text'
+import { BRAIN_TOOL, batchText, decidedText, progressText, RESET_TOOL, SERVER_INSTRUCTIONS, SERVER_NAME, TEXT } from './text'
+
+// Chat apps cache the widget by its address, so the address changes whenever the built widget does.
+const WIDGET_URI = `ui://day19/contacts-${[...widgetHtml].reduce((hash, char) => (Math.imul(hash, 31) + char.charCodeAt(0)) >>> 0, 7).toString(36)}.html`
 
 const text = (value: string) => [{ type: 'text' as const, text: value }]
 
@@ -87,6 +90,30 @@ export function createServer(env: Env, user: string): McpServer {
     async () => {
       const progress = await brain.progress()
       return { content: text(progressText(progress)), structuredContent: { ...progress } }
+    },
+  )
+
+  // Hidden from the assistant: it is only for the widget's Speak button.
+  server.registerTool(
+    TOOL.transcribe,
+    {
+      title: TEXT.transcribe.title,
+      description: TEXT.transcribe.description,
+      inputSchema: schema.transcribeInput,
+      outputSchema: schema.heard,
+      annotations: { readOnlyHint: true, openWorldHint: false },
+      _meta: { ui: { visibility: ['app'] } },
+    },
+    async ({ audio }) => {
+      try {
+        const { text: said } = await env.AI.run('@cf/openai/whisper-large-v3-turbo', { audio, task: 'transcribe', vad_filter: true })
+        const heard = (said ?? '').trim()
+        if (!heard) return { content: text("Didn't catch any words. Try again or type it."), isError: true }
+        return { content: text(heard), structuredContent: { text: heard } }
+      } catch (error) {
+        console.error('Transcription failed:', error instanceof Error ? error.name : 'unknown')
+        return { content: text("Couldn't turn that into words. Try again or type it."), isError: true }
+      }
     },
   )
 

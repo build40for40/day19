@@ -10,7 +10,7 @@ Shared 40 for 40 context lives in `../AGENTS.md`.
 ## Stack
 
 - One Cloudflare Worker (`src/index.ts`) serving an MCP server at `/mcp`, built with `@modelcontextprotocol/server` and `agents/mcp/server`, like Day 15.
-- The widget is an MCP App (`@modelcontextprotocol/ext-apps`): `widget/` builds with Vite into one file, `dist/widget.html`, which the Worker bundles as text and serves as the `ui://day19/contacts.html` resource. It renders in Claude and ChatGPT.
+- The widget is an MCP App (`@modelcontextprotocol/ext-apps`): `widget/` builds with Vite into one file, `dist/widget.html`, which the Worker bundles as text and serves as a `ui://day19/contacts-<hash>.html` resource (the hash changes with each build, so chat apps don't show a stale copy). It renders in Claude and ChatGPT.
 - `src/contract.ts` is the shared contract below as TypeScript types and tool names. The widget and the server both import it. `src/mcp/schemas.ts` is the same thing as zod schemas.
 - `src/game.ts` holds the rules (five a day, let go or keep with gratitude, the Brain as markdown) with no Cloudflare in it, so it tests in plain Node and also runs inside the widget's fake mode.
 - `src/brain.ts` is a Durable Object, one per person, that stores their decisions and today's five.
@@ -31,6 +31,7 @@ A contact is `{ id, name, emails[], phones[], photoUrl, organisation }`. `photoU
 | `keep_contact` | `{ id, gratitude, spoken? }` | `{ id, decision: "kept", progress }` |
 | `let_go_contact` | `{ id }` | `{ id, decision: "let_go", progress }` |
 | `progress` | none | `{ decided, total }` |
+| `transcribe` | `{ audio, mimeType }`, audio as base64 | `{ text }`. Only the widget calls it, for the Speak button |
 
 What the widget relies on, beyond the names:
 
@@ -47,17 +48,18 @@ Two extra tools sit outside the contract: `read_brain` (the Brain as markdown) a
 ### Two ways to speak the gratitude
 
 - **Talking to the assistant**: the person says "keep her, she told me my writing was worth reading" and the assistant calls `keep_contact` with their words and `spoken: true`. The server instructions tell it never to write the gratitude itself. This works wherever the chat app has voice.
-- **The Speak button** in the widget uses the browser's speech to text and fills the same box. It needs the chat app to allow the microphone, and falls back to typing where it doesn't.
+- **The Speak button** in the widget records up to 30 seconds from the microphone and sends the clip to `transcribe`, which runs Cloudflare's Whisper model (Workers AI) and returns the words for the same box. The browser's own speech to text isn't used: in the Claude desktop app it errors, because there's no speech service behind it. The button needs the chat app to give the widget the microphone, and says why when it can't. The audio isn't stored.
 
 ### What MCP and MCP Apps need, and where it's met
 
-- **The widget is a resource**: `ui://day19/contacts.html`, MIME type `text/html;profile=mcp-app`, one self-contained HTML file with no outside scripts.
+- **The widget is a resource**: a `ui://` address, MIME type `text/html;profile=mcp-app`, one self-contained HTML file with no outside scripts.
 - **One tool opens it**: `start_game` has `_meta.ui.resourceUri` pointing at it. The other tools have no widget, so the assistant can call them without drawing a new one each time.
 - **Every tool declares `inputSchema` and `outputSchema`**, and its `structuredContent` matches the output schema.
 - **Annotations**: `readOnlyHint` on the three that only read, `destructiveHint` on `let_go_contact` so chat apps ask before the assistant deletes anyone.
 - **Permissions and CSP live on the resource**, not the tool: `permissions.microphone` for the Speak button, and `csp.resourceDomains` allowing `https://lh3.googleusercontent.com`, where Google serves contact photos. Check that host against real People API photo URLs once sign-in works.
 - **The widget talks through the `App` class** only: `ontoolresult` for the first batch, `callServerTool` for the buttons, `updateModelContext` to tell the assistant what was decided, and the host's theme and fonts.
-- **Still to do for real users**: OAuth on the MCP endpoint (it's open today, which is fine only while the contacts are made up).
+- **`transcribe` is hidden from the assistant** with `_meta.ui.visibility: ["app"]`.
+- **Still to do for real users**: OAuth on the MCP endpoint. It's open today, which is fine only while the contacts are made up, and it means anyone with the address can use `transcribe` on the team's Cloudflare bill (about $0.0005 a minute of audio).
 
 ## Commands
 

@@ -3,7 +3,7 @@ import { App, applyDocumentTheme, applyHostFonts, applyHostStyleVariables, type 
 import { MAX_GRATITUDE, MIN_GRATITUDE, type Batch, type Contact, type Progress } from '../../src/contract'
 import './style.css'
 import { fakeTools, mcpTools, type Tools } from './tools'
-import { BLOCKED, canListen, listen, micProblem, type Listener } from './voice'
+import { record, type Recording } from './voice'
 
 type Child = Node | string | false | undefined
 type Props = Record<string, string | boolean | ((event: Event) => void)>
@@ -37,7 +37,7 @@ let busy = false
 let problem = ''
 let draft = ''
 let spoken = false
-let listener: Listener | undefined
+let listener: Recording | undefined
 
 const firstName = (contact: Contact) => contact.name.split(' ')[0] ?? contact.name
 const initials = (contact: Contact) =>
@@ -189,36 +189,43 @@ function gratitude(contact: Contact) {
     problem = ''
   })
 
-  const stopped = (why?: string) => {
+  const idle = (why?: string) => {
     listener = undefined
     mic.textContent = 'Speak'
     mic.classList.remove('listening')
+    mic.removeAttribute('aria-busy')
     status.textContent = ''
     if (why) error.textContent = problem = why
   }
 
   mic.addEventListener('click', async () => {
     error.textContent = problem = ''
-    if (listener) return stopListening()
+    if (listener) return listener.stop()
+    const transcribe = tools.transcribe
+    if (!transcribe) return
     status.textContent = 'Checking the mic…'
-    const blocked = await micProblem()
-    status.textContent = ''
-    if (blocked) {
-      error.textContent = problem = blocked
-      return
-    }
-    const before = box.value.trim()
-    listener = listen({
-      onText: (text) => {
+    const started = await record(async (clip, why) => {
+      if (!clip) return idle(why)
+      listener = undefined
+      mic.classList.remove('listening')
+      mic.textContent = 'Speak'
+      mic.setAttribute('aria-busy', 'true')
+      status.textContent = 'Writing it down…'
+      try {
+        const { text } = await transcribe(clip.audio, clip.mimeType)
+        const before = box.value.trim()
         box.value = draft = `${before ? `${before} ` : ''}${text}`.slice(0, MAX_GRATITUDE)
         spoken = true
-      },
-      onStop: stopped,
+        idle()
+      } catch (failure) {
+        idle(failure instanceof Error ? failure.message : "Couldn't turn that into words. Try again or type it.")
+      }
     })
-    if (!listener) return
+    if (typeof started === 'string') return idle(started)
+    listener = started
     mic.textContent = 'Stop'
     mic.classList.add('listening')
-    status.textContent = 'Listening…'
+    status.textContent = 'Listening… tap Stop when you\'re done'
   })
 
   const save = () => {
@@ -241,7 +248,7 @@ function gratitude(contact: Contact) {
     {},
     h('label', { for: 'gratitude' }, `What are you grateful to ${firstName(contact)} for? Type it or say it.`),
     box,
-    h('div', { class: 'voice' }, canListen ? mic : h('span', {}, BLOCKED), status),
+    tools.transcribe ? h('div', { class: 'voice' }, mic, status) : false,
     error,
     h(
       'div',
