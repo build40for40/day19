@@ -27,6 +27,9 @@ function page(title: string, body: string, headers = new Headers(), status = 200
   const html = `<!doctype html>
 <html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escape(title)}</title>
+<link rel="icon" href="favicon.ico" sizes="32x32">
+<link rel="icon" type="image/svg+xml" href="turkey.svg">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
   :root { color-scheme: light dark; --bg: #faf6f0; --fg: #2b2118; --muted: #6b5d50; --accent: #b4532a; }
   @media (prefers-color-scheme: dark) { :root { --bg: #1c1713; --fg: #f3ebe1; --muted: #b8a999; --accent: #e07b4c; } }

@@ -7,6 +7,8 @@ export type Decision = { kind: 'kept'; gratitude: string; at: string } | { kind:
 export interface BrainEntry {
   contact: Contact
   decision: Decision
+  /** When a thank-you draft was last handed out for this contact, so the next round only drafts the new ones. */
+  drafted?: string
 }
 
 export interface GameState {
@@ -117,9 +119,19 @@ export class Game {
     return brainMarkdown(Object.values((await this.state()).brain))
   }
 
-  /** Everyone kept, newest first, with what the person is grateful for. Or just `id`, if given. */
-  async thankYous(id?: string): Promise<ThankYou[]> {
-    return thankYous(Object.values((await this.state()).brain)).filter((note) => !id || note.id === id)
+  /**
+   * Kept contacts to write thank-yous to, newest first: just `id` if given, everyone kept if `all`,
+   * otherwise only those with no draft yet. Everyone returned is marked as drafted.
+   */
+  async thankYous({ id, all = false }: { id?: string; all?: boolean } = {}): Promise<ThankYou[]> {
+    const state = await this.state()
+    const notes = thankYous(Object.values(state.brain)).filter((note) => (id ? note.id === id : all || !state.brain[note.id]?.drafted))
+    if (notes.length) {
+      const at = this.now().toISOString()
+      for (const note of notes) state.brain[note.id]!.drafted = at
+      await this.store.save(state)
+    }
+    return notes
   }
 }
 

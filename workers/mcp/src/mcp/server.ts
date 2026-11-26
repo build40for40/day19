@@ -10,7 +10,7 @@ import { TOOL, type Batch, type Decided } from '../contract'
 import { DEMO_USER, OAUTH_SCOPE } from '../env'
 import { GoogleRevokedError, type GoogleProps } from '../google'
 import * as schema from './schemas'
-import { BRAIN_TOOL, batchText, decidedText, LIST_TOOL, progressText, RESET_TOOL, SERVER_INSTRUCTIONS, SERVER_NAME, SYNC_TOOL, TEXT, THANKS_TOOL } from './text'
+import { BRAIN_TOOL, batchText, decidedText, LIST_TOOL, progressText, RESET_TOOL, SERVER_INSTRUCTIONS, SERVER_NAME, SYNC_TOOL, ROUND_DONE, TEXT, THANKS_BRIEF, THANKS_TOOL } from './text'
 
 // Chat apps cache the widget by its address, so the address changes whenever the built widget does.
 const WIDGET_URI = `ui://gobbler/contacts-${[...widgetHtml].reduce((hash, char) => (Math.imul(hash, 31) + char.charCodeAt(0)) >>> 0, 7).toString(36)}.html`
@@ -70,6 +70,12 @@ export function createServer(env: Env, session: Session): McpServer {
   const server = new McpServer({ name: SERVER_NAME, version: '0.3.0' }, { instructions: SERVER_INSTRUCTIONS })
   const meta = toolMeta(session)
 
+  /** When a decision finishes today's contacts, tells the assistant to draft the thank-yous. */
+  const roundCheck = async <T extends { content: { type: 'text'; text: string }[]; isError?: boolean }>(result: T): Promise<T> => {
+    if (result.isError || !(await brain.next(undefined, false, token)).doneForToday) return result
+    return { ...result, content: [...result.content, ...text(ROUND_DONE)] }
+  }
+
   // The only tool with a widget. The rest return data, for the widget's buttons and for the assistant.
   registerAppTool(
     server,
@@ -107,7 +113,7 @@ export function createServer(env: Env, session: Session): McpServer {
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
       _meta: meta,
     },
-    ({ id, gratitude }) => guarded(async () => decidedResult(await brain.keep(id, gratitude, token))),
+    ({ id, gratitude }) => guarded(async () => roundCheck(decidedResult(await brain.keep(id, gratitude, token)))),
   )
 
   server.registerTool(
@@ -120,7 +126,7 @@ export function createServer(env: Env, session: Session): McpServer {
       annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
       _meta: meta,
     },
-    ({ id }) => guarded(async () => decidedResult(await brain.letGo(id, token))),
+    ({ id }) => guarded(async () => roundCheck(decidedResult(await brain.letGo(id, token)))),
   )
 
   server.registerTool(
@@ -156,11 +162,15 @@ export function createServer(env: Env, session: Session): McpServer {
       annotations: { readOnlyHint: true, openWorldHint: false },
       _meta: meta,
     },
-    ({ id }) =>
+    ({ id, all }) =>
       guarded(async () => {
-        const notes = await brain.thankYous(id, token)
+        const notes = await brain.thankYous({ id, all }, token)
         const lines = notes.map((n) => `- ${n.name} (${n.emails.join(', ') || 'no email'}): ${n.gratitude}`)
-        const summary = notes.length ? [`${notes.length} kept, with gratitude:`, ...lines].join('\n') : 'Nobody kept yet, so there is nobody to thank.'
+        const summary = notes.length
+          ? [`${notes.length} kept, with gratitude:`, ...lines, '', 'How to write the drafts:', THANKS_BRIEF].join('\n')
+          : id || all
+            ? 'Nobody kept yet, so there is nobody to thank. Keep someone in Gobbler first.'
+            : 'No new thank-yous: everyone kept already has a draft. Call again with all set to true to draft them all again.'
         return { content: text(summary), structuredContent: { notes } }
       }),
   )
