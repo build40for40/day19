@@ -53,6 +53,20 @@ describe("worker", () => {
     expect(await home.text()).toContain("Gobbler");
   });
 
+  it("serves the turkey favicon, and links it from the landing page and the Worker's own pages", async () => {
+    const types = { "/favicon.ico": "image/vnd.microsoft.icon", "/turkey.svg": "image/svg+xml", "/apple-touch-icon.png": "image/png" };
+    for (const [path, type] of Object.entries(types)) {
+      const icon = await call(path);
+      expect(icon.status).toBe(200);
+      expect(icon.headers.get("Content-Type")).toBe(type);
+    }
+    for (const path of ["/", "/privacy"]) {
+      const html = await (await call(path)).text();
+      expect(html).toContain('<link rel="icon" type="image/svg+xml" href="/turkey.svg">');
+      expect(html).toContain('<link rel="icon" href="/favicon.ico" sizes="32x32">');
+    }
+  });
+
   it("sends build40for40.com/gobbler and the old workers.dev address to the app's own host", async () => {
     const fetchAt = (url: string) => exports.default.fetch(url, { redirect: "manual" });
     const site = await fetchAt("https://build40for40.com/gobbler/privacy?x=1");
