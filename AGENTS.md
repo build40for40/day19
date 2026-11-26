@@ -41,7 +41,11 @@ What the widget relies on, beyond the names:
 - **Text for the assistant**: every result also has a `content` text version of the same data, because the assistant reads that and the widget reads `structuredContent`.
 - Deciding the same contact twice is an error. The widget then calls `next_contacts` and skips anyone already decided, which is how a contact kept by telling the assistant drops out of the widget.
 
-Extra tools sit outside the contract: `read_brain` (the Brain as markdown), `reset_demo` (demo endpoint only, puts the made-up contacts back), and `sync_contacts` and `list_contacts` (signed in only).
+Extra tools sit outside the contract: `read_brain` (the Brain as markdown), `reset_demo` (demo endpoint only, puts the made-up contacts back), `thank_you_notes`, and `sync_contacts` and `list_contacts` (signed in only).
+
+### Thank-you emails
+
+When the person asks, the assistant calls `thank_you_notes` (everyone kept, newest first, with their emails and gratitude) and turns each rough gratitude into a short, coherent thank-you with a subject line. The server instructions tell it to rephrase only, adding no facts, and to save drafts through whatever email tool the person has connected to the chat app (Gmail's own connector in Claude), never to send them. With no email tool it shows the drafts with a `mailto:` link. Our Google sign-in has no Gmail scope and doesn't need one. The widget doesn't change.
 
 ### Two ways to give the gratitude
 
@@ -99,7 +103,7 @@ A "hot or not" game for your contacts, played inside a Claude chat, as a Claude 
 - The user installs the plugin and signs in with Google (OAuth), giving read and write access to contacts through the Google People API.
 - Claude shows a widget in the chat with the day's 5 contacts, one at a time, each with delete and keep.
 - The Brain is the archive: every contact that leaves Google is written there first, and every kept contact is written there with its gratitude.
-- Nothing is sent to anyone. Recording the gratitude is the point.
+- Nothing is sent to anyone. Recording the gratitude is the point. Thank-you emails are only ever drafted, in the person's own mail, for them to send.
 - A landing page explains it and how to install it.
 
 Stretch: an archive middle option, sending the gratitude (message, email, letter), email frequency to suggest who to keep, scheduled runs, a phone app.

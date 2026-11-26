@@ -99,6 +99,30 @@ export class Game {
   async brain(): Promise<string> {
     return brainMarkdown(Object.values((await this.state()).brain))
   }
+
+  /** Everyone kept, newest first, with what the person is grateful for. Or just `id`, if given. */
+  async thankYous(id?: string): Promise<ThankYou[]> {
+    return thankYous(Object.values((await this.state()).brain)).filter((note) => !id || note.id === id)
+  }
+}
+
+/** What a thank-you email is written from. The assistant drafts it; nothing here sends anything. */
+export interface ThankYou {
+  id: string
+  name: string
+  emails: string[]
+  gratitude: string
+  keptOn: string
+}
+
+export function thankYous(entries: BrainEntry[]): ThankYou[] {
+  return entries
+    .flatMap(({ contact, decision }) =>
+      decision.kind === 'kept'
+        ? [{ id: contact.id, name: contact.name, emails: contact.emails, gratitude: decision.gratitude, keptOn: decision.at }]
+        : [],
+    )
+    .toSorted((a, b) => b.keptOn.localeCompare(a.keptOn))
 }
 
 const day = (iso: string) =>

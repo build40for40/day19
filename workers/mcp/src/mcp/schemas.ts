@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import { BATCH_SIZE, MAX_GRATITUDE, type Batch, type Contact, type Decided, type Progress } from '../contract'
+import type { ThankYou } from '../game'
 import { TEXT } from './text'
 
 // The contract in src/contract.ts as schemas, so every tool advertises its input and output shape.
@@ -30,3 +31,9 @@ export const keepInput = z.object({
 })
 
 export const letGoInput = z.object({ id: z.string().describe(TEXT.letGo.id) })
+
+export const thanksInput = z.object({ id: z.string().optional().describe(TEXT.thanks.id) })
+
+export const thanks = z.object({
+  notes: z.array(z.object({ id: z.string(), name: z.string(), emails: z.array(z.string()), gratitude: z.string(), keptOn: z.string() })),
+}) satisfies z.ZodType<{ notes: ThankYou[] }>

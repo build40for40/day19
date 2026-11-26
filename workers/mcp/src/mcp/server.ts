@@ -10,7 +10,7 @@ import { TOOL, type Batch, type Decided } from '../contract'
 import { DEMO_USER, OAUTH_SCOPE } from '../env'
 import { GoogleRevokedError, type GoogleProps } from '../google'
 import * as schema from './schemas'
-import { BRAIN_TOOL, batchText, decidedText, LIST_TOOL, progressText, RESET_TOOL, SERVER_INSTRUCTIONS, SERVER_NAME, SYNC_TOOL, TEXT } from './text'
+import { BRAIN_TOOL, batchText, decidedText, LIST_TOOL, progressText, RESET_TOOL, SERVER_INSTRUCTIONS, SERVER_NAME, SYNC_TOOL, TEXT, THANKS_TOOL } from './text'
 
 // Chat apps cache the widget by its address, so the address changes whenever the built widget does.
 const WIDGET_URI = `ui://gobbler/contacts-${[...widgetHtml].reduce((hash, char) => (Math.imul(hash, 31) + char.charCodeAt(0)) >>> 0, 7).toString(36)}.html`
@@ -144,6 +144,25 @@ export function createServer(env: Env, session: Session): McpServer {
     BRAIN_TOOL,
     { title: TEXT.brain.title, description: TEXT.brain.description, inputSchema: schema.nothing, annotations: { readOnlyHint: true, openWorldHint: false }, _meta: meta },
     () => guarded(async () => ({ content: text(await brain.markdown(token)) })),
+  )
+
+  server.registerTool(
+    THANKS_TOOL,
+    {
+      title: TEXT.thanks.title,
+      description: TEXT.thanks.description,
+      inputSchema: schema.thanksInput,
+      outputSchema: schema.thanks,
+      annotations: { readOnlyHint: true, openWorldHint: false },
+      _meta: meta,
+    },
+    ({ id }) =>
+      guarded(async () => {
+        const notes = await brain.thankYous(id, token)
+        const lines = notes.map((n) => `- ${n.name} (${n.emails.join(', ') || 'no email'}): ${n.gratitude}`)
+        const summary = notes.length ? [`${notes.length} kept, with gratitude:`, ...lines].join('\n') : 'Nobody kept yet, so there is nobody to thank.'
+        return { content: text(summary), structuredContent: { notes } }
+      }),
   )
 
   if (session.kind === 'google') registerGoogleTools(server, brain, session.google.accessToken, meta)

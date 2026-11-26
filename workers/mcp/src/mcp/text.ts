@@ -1,6 +1,7 @@
 import { BATCH_SIZE, MAX_GRATITUDE, TOOL, type Batch, type Decided, type Progress } from '../contract'
 
 export const SERVER_NAME = 'gobbler'
+export const THANKS_TOOL = 'thank_you_notes'
 
 
 export const SERVER_INSTRUCTIONS = `This server is a daily game for cleaning up a contacts list with gratitude. Each day it surfaces ${BATCH_SIZE} contacts. Each one is either let go, or kept by saying what the person is grateful to them for. Everything is saved to the person's Brain, a markdown file, so nobody is ever lost.
@@ -10,7 +11,14 @@ export const SERVER_INSTRUCTIONS = `This server is a daily game for cleaning up 
 - Never write the gratitude for them, and never keep a contact without it. If they want to keep someone but haven't said why, ask what they're grateful to that person for.
 - Only call ${TOOL.letGo} when the person clearly says to let go of or delete that contact. It deletes the contact from their contacts list and from any phone synced to it. A copy stays in the Brain.
 - After deciding in the chat, call ${TOOL.start} again if they want to see where they are.
-- Nothing is ever sent to the contacts themselves.`
+- This server never sends anything to the contacts themselves.
+
+Thank-you emails, only when the person asks for them ("draft thank-yous", "write to Jeff"):
+- Call ${THANKS_TOOL} for everyone kept, or with an id for one person. It returns each name, email and gratitude.
+- Write one short email each, turning the gratitude into a simple, coherent thank-you: one to three plain sentences, warm and natural, in the first person, as if the person wrote it. Rephrase rough notes into proper sentences ("mah jong" becomes "teaching me mah jong"), but add no facts, memories or feelings they didn't give.
+- Give each one a short subject line, like "Thank you" or "A quick thank you".
+- If an email tool such as Gmail is connected, save each one as a draft addressed to the contact. Never send it: the person reviews and sends it themselves. Without an email tool, show the drafts in the chat with a mailto link for each contact that has an email address.
+- Skip anyone with no email address, and say who was skipped.`
 
 export const TEXT = {
   start: {
@@ -40,6 +48,12 @@ export const TEXT = {
   brain: {
     title: 'Read the Brain',
     description: 'Returns the Brain as markdown: everyone kept, with what the person is grateful for, and everyone let go.',
+  },
+  thanks: {
+    title: 'Thank-you notes',
+    description:
+      "Returns everyone the person kept, newest first, with their email addresses and what the person is grateful to them for, so you can draft thank-you emails. Only call it when the person asks for thank-you emails. It doesn't write or send anything.",
+    id: 'Only this contact. Leave it out for everyone kept.',
   },
   reset: {
     title: 'Reset the demo',

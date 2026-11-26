@@ -87,4 +87,17 @@ describe('Game', () => {
   it('says so when the Brain is empty', async () => {
     expect(await setup().game.brain()).toContain('Nobody here yet')
   })
+
+  it('lists everyone kept as thank-you notes, newest first, and skips anyone let go', async () => {
+    const { game, setNow } = setup()
+    const [a, b, c] = (await game.next()).contacts
+    await game.keep(a!.id, 'teaching me mah jong')
+    setNow('2026-11-26T11:00:00Z')
+    await game.keep(b!.id, 'feeding my cat')
+    await game.letGo(c!.id)
+    const notes = await game.thankYous()
+    expect(notes.map((n) => n.gratitude)).toEqual(['feeding my cat', 'teaching me mah jong'])
+    expect(notes[1]).toEqual({ id: a!.id, name: a!.name, emails: a!.emails, gratitude: 'teaching me mah jong', keptOn: '2026-11-26T10:00:00.000Z' })
+    expect(await game.thankYous(a!.id)).toHaveLength(1)
+  })
 })

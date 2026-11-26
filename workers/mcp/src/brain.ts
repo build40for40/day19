@@ -12,7 +12,7 @@ import { DurableObject } from 'cloudflare:workers'
 
 import { DEMO_CONTACTS, type ContactSource } from './contacts'
 import type { Batch, Contact, Decided, Progress } from './contract'
-import { Game, GameError, type GameState, type Pick, type StateStore } from './game'
+import { Game, GameError, type GameState, type Pick, type StateStore, type ThankYou } from './game'
 import { deleteContact, getPeople, listConnections, SyncTokenExpiredError } from './google'
 import { dealHand, indexContact, type IndexedContact } from './score'
 
@@ -245,6 +245,10 @@ export class Brain extends DurableObject<Env> {
 
   async markdown(accessToken?: string): Promise<string> {
     return (await this.game(accessToken)).brain()
+  }
+
+  async thankYous(id?: string, accessToken?: string): Promise<ThankYou[]> {
+    return (await this.game(accessToken)).thankYous(id)
   }
 
   /** Demo only: puts every made-up contact back and empties the Brain. Never wipes a signed-in Brain. */

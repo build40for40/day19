@@ -33,7 +33,7 @@ describe("worker", () => {
 
     const tools = await json(await rpc("tools/list"));
     const names = tools.result.tools.map((tool: { name: string }) => tool.name);
-    expect(names).toEqual(expect.arrayContaining(["start_game", "next_contacts", "keep_contact", "let_go_contact", "reset_demo"]));
+    expect(names).toEqual(expect.arrayContaining(["start_game", "next_contacts", "keep_contact", "let_go_contact", "thank_you_notes", "reset_demo"]));
     expect(names).not.toContain("list_contacts");
     for (const tool of tools.result.tools) expect(tool._meta.securitySchemes).toEqual([{ type: "noauth" }]);
 
