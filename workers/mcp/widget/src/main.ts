@@ -423,6 +423,13 @@ function done(contacts: Contact[]) {
   )
 }
 
+/** Once a round ends with someone kept, asks the assistant (as the person) to draft their thank-yous in Gmail. Drafts are never sent. */
+function askForDrafts() {
+  if (fake || !batch?.some((contact) => outcomes.get(contact.id)?.kind === 'kept')) return
+  const text = "That's my five done. Draft thank-you emails for the people I just kept and save them in my Gmail drafts."
+  void app.sendMessage({ role: 'user', content: [{ type: 'text', text }] }).catch(() => {})
+}
+
 /** Asks for the next five once today's are done. A let go still waiting on its undo is sent first. */
 async function goAgain() {
   if (busy) return
@@ -463,7 +470,10 @@ function render() {
   if (current < 0) {
     const fresh = shown !== 'done'
     shown = 'done'
-    if (fresh) buzz([14, 70, 14, 70, 30])
+    if (fresh) {
+      buzz([14, 70, 14, 70, 30])
+      askForDrafts()
+    }
     const card = done(batch)
     card.classList.toggle('deal', fresh)
     root.replaceChildren(top(batch.length), card, undoBar() || '')
