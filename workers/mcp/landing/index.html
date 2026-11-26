@@ -48,9 +48,11 @@ body{margin:0}
 .tag{grid-column:1/9;color:var(--cr)}
 .act{grid-column:9/13;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:12px;padding-bottom:.2em}
 
-.game{padding-top:var(--sp);padding-bottom:calc(var(--sp) + 24px)}
-.big{font-size:var(--L);line-height:.86;letter-spacing:-.022em;color:var(--ox);margin-left:-.04em}
-.stage{margin-top:clamp(56px,6.4vw,96px);align-items:start}
+.band{padding-top:clamp(48px,6vw,88px);padding-bottom:clamp(48px,6vw,88px)}
+.tn{background:var(--tint);color:var(--ink)}
+.game{padding-top:clamp(56px,6.4vw,96px);padding-bottom:calc(var(--sp) + 24px)}
+.big{font-size:var(--L);line-height:.86;letter-spacing:-.022em;color:var(--cr);margin-left:-.04em}
+.stage{align-items:start}
 .gl{grid-column:1/5;padding-top:4px}
 .lede{font-size:20px;line-height:1.45;max-width:21em}
 .lede+.lede{margin-top:18px}
@@ -61,14 +63,14 @@ body{margin:0}
 .five svg{display:block;width:64px;height:64px}
 .five .now span{font-weight:800}
 .five .dot{fill:var(--ox)}
-.five .now .dot{fill:var(--cr);stroke:var(--ink);stroke-width:4}
+.five .now .dot{fill:var(--tom);stroke:var(--ink);stroke-width:4}
 .five text{font-family:var(--hf);font-weight:900;font-size:40px;fill:var(--cr)}
 .five .now text{fill:var(--ink)}
 .five .note{margin-top:14px;font-size:15px;line-height:1.4}
 
 .deck{grid-column:5/13;position:relative}
-.deck::before,.deck::after{content:"";position:absolute;left:28px;right:28px;bottom:-14px;height:40px;border-radius:0 0 28px 28px;background:#F7B9A6}
-.deck::after{left:56px;right:56px;bottom:-28px;background:#F19A82;z-index:0}
+.deck::before,.deck::after{content:"";position:absolute;left:28px;right:28px;bottom:-14px;height:40px;border-radius:0 0 28px 28px;background:#EFCFB2}
+.deck::after{left:56px;right:56px;bottom:-28px;background:#E6BF9E;z-index:0}
 .deck::before{z-index:1}
 .card{position:relative;z-index:2;background:var(--cr);color:var(--ink);border-radius:32px;padding:clamp(24px,3.6vw,52px)}
 .who{display:flex;align-items:center;gap:clamp(18px,2.2vw,32px)}
@@ -76,11 +78,10 @@ body{margin:0}
 .cname{font-size:clamp(44px,5.8vw,84px);line-height:.9}
 .crole{margin-top:10px;font-size:clamp(18px,1.5vw,22px);font-weight:600;color:var(--mute)}
 .ask{margin-top:clamp(32px,3.4vw,48px);font-size:18px;font-weight:650}
-.field{position:relative;margin-top:12px;background:var(--tint);border-radius:22px;padding:22px 100px 20px 26px}
+.field{margin-top:12px;background:#fff;box-shadow:inset 0 0 0 2px var(--ink);border-radius:22px;padding:22px 26px}
+.pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.pills span{font-size:15px;font-weight:600;color:var(--mute);border-radius:999px;padding:6px 14px;box-shadow:inset 0 0 0 1.5px currentColor}
 .say{font-size:clamp(21px,2vw,29px);font-weight:600;line-height:1.26;letter-spacing:-.012em}
-.heard{margin-top:10px;font-size:16px;font-weight:600;color:var(--mute)}
-.mic{position:absolute;right:20px;top:50%;margin-top:-30px;width:60px;height:60px;border-radius:50%;background:var(--ox);color:var(--cr);display:flex;align-items:center;justify-content:center}
-.mic svg{width:26px;height:26px}
 .crow{display:flex;align-items:center;justify-content:flex-end;gap:12px;margin-top:24px}
 .cb{display:inline-flex;align-items:center;font-family:var(--hf);font-weight:900;font-size:21px;min-height:62px;padding:0 32px;border-radius:999px;color:var(--ink);background:var(--li)}
 .cb.line{background:transparent;box-shadow:inset 0 0 0 3px var(--ink)}
@@ -134,10 +135,8 @@ body{margin:0}
 .face{width:68px;height:68px;font-size:26px}
 .cname{font-size:40px}
 .crole{font-size:17px}
-.field{padding:14px 70px 14px 16px}
+.field{padding:14px 16px}
 .say{font-size:20px}
-.heard{font-size:14px}
-.mic{width:46px;height:46px;right:12px;margin-top:-23px}
 .crow{justify-content:space-between}
 .cb{padding:0 20px;flex:1;justify-content:center}
 .done .tk{max-width:260px}
@@ -189,13 +188,18 @@ body{margin:0}
 </div>
 </section>
 
-<section class="tm game" id="how" aria-labelledby="gob-game">
+<section class="tm band" id="how" aria-labelledby="gob-game">
 <div class="w">
 <h2 class="h big" id="gob-game"><span>Like five a day.</span><span>But people.</span></h2>
+</div>
+</section>
+
+<section class="tn game">
+<div class="w">
 <div class="g stage">
 <div class="gl">
 <p class="lede">Every day Gobbler serves up five people from your Google Contacts, right in the chat.</p>
-<p class="lede">Keep someone by saying what you’re grateful for, typed or out loud. Let go and they leave your contacts. Five and you’re done.</p>
+<p class="lede">Keep someone by saying what you’re grateful for. Let go and they leave your contacts. Five and you’re done, or go again for five more.</p>
 <div class="five">
 <h3>Today’s five</h3>
 <ol>
@@ -209,7 +213,7 @@ body{margin:0}
 </div>
 </div>
 <div class="deck">
-<div class="card" role="img" aria-label="An example of Gobbler in a chat. Bao Nguyen, Year 9 English teacher. What are you grateful to Bao for? She told me my writing was worth reading. Buttons: Let go, Keep Bao.">
+<div class="card" role="img" aria-label="An example of Gobbler in a chat. Bao Nguyen, Year 9 English teacher. What are you grateful to Bao for? Bao told me my writing was worth reading. Buttons: Let go, Keep Bao.">
 <div class="who">
 <span class="face">BN</span>
 <div>
@@ -218,7 +222,8 @@ body{margin:0}
 </div>
 </div>
 <p class="ask">What are you grateful to Bao for?</p>
-<div class="field"><p class="say">She told me my writing was worth reading.</p><p class="heard">Said out loud, 6 seconds</p><span class="mic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0"></path><path d="M12 18v3"></path></svg></span></div>
+<div class="field"><p class="say">Bao told me my writing was worth reading.</p></div>
+<p class="pills"><span>Bao taught me…</span><span>I still remember when Bao…</span></p>
 <div class="crow"><span class="cb line">Let go</span><span class="cb">Keep Bao</span></div>
 </div>
 </div>
@@ -262,7 +267,7 @@ body{margin:0}
 </ol>
 </div>
 </div>
-<p class="try">Want a go without signing in? Use <code>https://gobbler.build40for40.com/demo/mcp</code> for made-up contacts.</p>
+<p class="try">Sign-in is invite only today, while Google checks us over. Not on the list?  Use <code>https://gobbler.build40for40.com/demo/mcp</code> for made-up contacts, no sign-in.</p>
 <footer class="foot">
 <p>Built in a day, live on Twitch, as Day 19 of 40 for 40.</p>
 <nav aria-label="Footer"><a href="/privacy">Privacy</a><a href="https://build40for40.com">build40for40.com</a></nav>
