@@ -3,8 +3,6 @@
 // adding nothing they didn't say. If that fails for any reason, a plain template uses their words
 // as written, so a keep always gets its draft.
 
-import Anthropic from '@anthropic-ai/sdk'
-
 import { THANKS_PS } from './mcp/text'
 
 export interface ThankYouInput {
@@ -50,6 +48,8 @@ export function templateSentences({ gratitude }: ThankYouInput): string {
 }
 
 async function polish(apiKey: string, input: ThankYouInput): Promise<string | null> {
+  // Loaded only when a draft is written, so the SDK stays out of the Worker's startup.
+  const { default: Anthropic } = await import('@anthropic-ai/sdk')
   const client = new Anthropic({ apiKey, timeout: 15_000, maxRetries: 1 })
   const response = await client.beta.messages.create({
     model: 'claude-opus-5-5',
