@@ -54,23 +54,38 @@ function buzz(pattern: number | number[]) {
   }
 }
 
-// Drawn here, with no names or anything else from the contacts in it, so it is safe to set as HTML.
-const GOBLET = `<svg viewBox="0 0 72 72" width="72" height="72" aria-hidden="true">
-  <defs><clipPath id="cup"><path d="M20 14h32c0 20-6 29-16 29S20 34 20 14z"/></clipPath></defs>
-  <g class="goblet-body">
-    <g clip-path="url(#cup)"><rect class="goblet-drink" x="18" y="18" width="36" height="28"/></g>
-    <path class="goblet-line" d="M20 14h32c0 20-6 29-16 29S20 34 20 14z"/>
-    <path class="goblet-line" d="M36 43v13M26 58h20"/>
+/**
+ * The turkey on the done screen. Its tail has one feather for each of today's contacts, gold for someone thanked and
+ * grey for someone let go, and it gobbles up the crumbs. Only the kind of each outcome goes into the drawing, never
+ * a name or anything else from the contacts, so it is safe to set as HTML.
+ */
+function turkey(kinds: Array<Outcome['kind'] | undefined>) {
+  const spread = kinds.length > 1 ? 130 / (kinds.length - 1) : 0
+  const feathers = kinds
+    .map((kind, i) => {
+      const angle = kinds.length > 1 ? -65 + spread * i : 0
+      return `<g transform="rotate(${angle.toFixed(1)} 44 50)"><ellipse class="feather ${kind === 'kept' ? 'thanked' : 'gone'}" style="animation-delay:${150 + i * 110}ms" cx="44" cy="20" rx="6.5" ry="17"/></g>`
+    })
+    .join('')
+  const bird = h('div', { class: 'turkey' })
+  bird.innerHTML = `<svg viewBox="0 0 104 76" width="104" height="76" aria-hidden="true">
+  ${feathers}
+  <path class="bird-line" d="M38 66v6M50 66v6M34 72h8M46 72h8"/>
+  <circle class="bird-body" cx="44" cy="50" r="17"/>
+  <path class="bird-wing" d="M34 50c2 8 12 9 16 2"/>
+  <g class="bird-head">
+    <path class="bird-neck" d="M56 46c4-4 6-9 6-14"/>
+    <circle class="bird-body" cx="63" cy="28" r="8"/>
+    <circle class="bird-eye" cx="65.5" cy="26" r="1.6"/>
+    <path class="bird-beak" d="M70 25l9 3-9 1z"/>
+    <path class="bird-beak bird-jaw" d="M70 29l8 0-8 3z"/>
+    <path class="bird-wattle" d="M69 32c3 0 4 3 2 6-2 0-3-3-2-6z"/>
   </g>
-  <path class="spark s1" d="M12 12l1.6 4.4L18 18l-4.4 1.6L12 24l-1.6-4.4L6 18l4.4-1.6z"/>
-  <path class="spark s2" d="M60 6l1.2 3.3 3.3 1.2-3.3 1.2L60 15l-1.2-3.3-3.3-1.2 3.3-1.2z"/>
-  <path class="spark s3" d="M62 32l1 2.7 2.7 1-2.7 1-1 2.7-1-2.7-2.7-1 2.7-1z"/>
+  <circle class="crumb c1" cx="90" cy="46" r="2.2"/>
+  <circle class="crumb c2" cx="95" cy="50" r="2.2"/>
+  <circle class="crumb c3" cx="88" cy="54" r="2.2"/>
 </svg>`
-
-function goblet() {
-  const cup = h('div', { class: 'goblet' })
-  cup.innerHTML = GOBLET
-  return cup
+  return bird
 }
 
 const firstName = (contact: Contact) => contact.name.split(' ')[0] ?? contact.name
@@ -383,7 +398,7 @@ function done(contacts: Contact[]) {
   return h(
     'div',
     { class: 'card deal done' },
-    goblet(),
+    turkey(contacts.map((contact) => outcomes.get(contact.id)?.kind)),
     h('p', { class: 'done-title' }, contacts.length ? `That's your ${contacts.length === BATCH_SIZE ? 'five' : 'lot'}. Well gobbled.` : "That's today done"),
     h('p', { class: 'done-body' }, contacts.length ? `${kept.length} thanked, ${letGo.length} let go.` : 'More contacts tomorrow.'),
     ...thanks,
