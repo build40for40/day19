@@ -1,0 +1,55 @@
+<!doctype html>
+<!-- Ben's landing page. Replace this whole file, and put CSS and images next to it in landing/.
+     Keep a link to /privacy: Google's consent screen points at it. -->
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gobbler</title>
+<meta name="description" content="A gratitude game for your Google Contacts, played in Claude or ChatGPT.">
+<style>
+  :root { color-scheme: light dark; --bg: #faf6f0; --fg: #2b2118; --muted: #6b5d50; --accent: #b4532a; --card: #fff; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #1c1713; --fg: #f3ebe1; --muted: #b8a999; --accent: #e07b4c; --card: #26201b; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 17px/1.55 system-ui, sans-serif; }
+  main { max-width: 36rem; margin: 0 auto; padding: 2.5rem 1rem 3rem; }
+  h1 { font-size: 2.2rem; line-height: 1.1; margin: 0 0 0.5rem; }
+  h2 { font-size: 1.2rem; margin-top: 2rem; }
+  .tagline { font-size: 1.15rem; color: var(--muted); margin-top: 0; }
+  .card { background: var(--card); border-radius: 0.8rem; padding: 1rem 1.1rem; margin: 1rem 0; }
+  code { overflow-wrap: anywhere; background: color-mix(in srgb, var(--accent) 12%, transparent); padding: 0.1rem 0.35rem; border-radius: 0.3rem; }
+  ol { padding-left: 1.3rem; }
+  a { color: var(--accent); }
+  footer { margin-top: 2.5rem; color: var(--muted); font-size: 0.95rem; }
+</style>
+<main>
+  <h1>Gobbler 🦃</h1>
+  <p class="tagline">Never forget anyone, but only remember who you care about.</p>
+
+  <p>Your contacts are full of people you no longer know, and a few you never properly thanked. Gobbler shows you five a day inside Claude or ChatGPT. Say what you're grateful for to keep them, or let them go. We save a copy of everyone first, so nobody is ever truly lost.</p>
+
+  <h2>Add it to Claude</h2>
+  <div class="card">
+    <ol>
+      <li>Settings, then Connectors, then <strong>Add custom connector</strong>.</li>
+      <li>Name it Gobbler and paste <code>https://gobbler.build40for40.com/mcp</code></li>
+      <li>Click Connect and sign in with Google. Google says the app isn't verified yet: click Advanced, then continue.</li>
+      <li>In a new chat, switch Gobbler on and say <em>let's clean up my contacts</em>.</li>
+    </ol>
+  </div>
+
+  <h2>Add it to ChatGPT</h2>
+  <div class="card">
+    <ol>
+      <li>Settings, then Apps and Connectors, then Advanced, and turn on <strong>Developer mode</strong>.</li>
+      <li>Create an app with the same address, choose OAuth, and sign in with Google.</li>
+      <li>In a new chat, pick Gobbler and ask it to start.</li>
+    </ol>
+  </div>
+
+  <p>Want a go without signing in? Use <code>https://gobbler.build40for40.com/demo/mcp</code> for made-up contacts.</p>
+
+  <footer>
+    Built live on day 19 of <a href="https://build40for40.com">40 for 40</a>. <a href="/privacy">Privacy</a>
+  </footer>
+</main>
+</html>

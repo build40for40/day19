@@ -6,7 +6,7 @@ const frame = document.getElementById('view') as HTMLIFrameElement
 const log = document.getElementById('log')!
 const note = (line: string) => (log.textContent = `${line}\n${log.textContent}`.slice(0, 2000))
 
-const client = new Client({ name: 'day19-local-host', version: '0.0.0' })
+const client = new Client({ name: 'gobbler-local-host', version: '0.0.0' })
 await client.connect(new StreamableHTTPClientTransport(new URL('/mcp', location.href)))
 
 let bridge: AppBridge | undefined
@@ -20,7 +20,7 @@ async function run(tool: string) {
   frame.srcdoc = html
   await loaded
 
-  bridge = new AppBridge(client, { name: 'day19-local-host', version: '0.0.0' }, { serverTools: {}, updateModelContext: { text: {} } })
+  bridge = new AppBridge(client, { name: 'gobbler-local-host', version: '0.0.0' }, { serverTools: {}, updateModelContext: { text: {} } })
   const ready = new Promise<void>((resolve) => (bridge!.oninitialized = () => resolve()))
   bridge.onsizechange = ({ height }) => {
     if (height) frame.style.height = `${height}px`

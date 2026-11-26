@@ -156,18 +156,12 @@ export const authHandler = {
         return new Response(null, { status: 302, headers });
       }
 
-      if (url.pathname === "/") {
-        return page(
-          "Day 19",
-          `<h1>Day 19: Gratitude stays unsaid</h1><p>This is the MCP server for Day 19 of <a href="https://build40for40.com">40 for 40</a>. Add <code>${escape(url.origin)}/mcp</code> to Claude or ChatGPT as a custom connector.</p><p class="muted"><a href="/privacy">Privacy</a></p>`,
-        );
-      }
-
       if (url.pathname === "/privacy") {
-        return page("Privacy · Day 19", privacyBody);
+        return page("Privacy · Gobbler", privacyBody);
       }
 
-      return new Response("Not found", { status: 404 });
+      // Everything else, including /, is Ben's landing page and its files in landing/. Missing files 404.
+      return env.ASSETS.fetch(request);
     } catch (error) {
       if (error instanceof AuthorizationError && error.redirectTo) return Response.redirect(error.redirectTo, 302);
       if (error instanceof AuthorizationError) return errorPage(error.description ?? "This sign-in link has expired or was already used.");

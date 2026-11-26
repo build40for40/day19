@@ -46,6 +46,24 @@ describe("worker", () => {
     expect((await call("/nope")).status).toBe(404);
   });
 
+  it("serves Ben's landing page from landing/ at /", async () => {
+    const home = await call("/");
+    expect(home.status).toBe(200);
+    expect(await home.text()).toContain("Gobbler");
+  });
+
+  it("sends build40for40.com/gobbler and the old workers.dev address to the app's own host", async () => {
+    const fetchAt = (url: string) => exports.default.fetch(url, { redirect: "manual" });
+    const site = await fetchAt("https://build40for40.com/gobbler/privacy?x=1");
+    expect(site.status).toBe(301);
+    expect(site.headers.get("Location")).toBe("https://example.com/privacy?x=1");
+    expect((await fetchAt("https://build40for40.com/gobbler")).headers.get("Location")).toBe("https://example.com/");
+    expect((await fetchAt("https://day19.40for40.workers.dev/mcp")).headers.get("Location")).toBe("https://example.com/mcp");
+    // Other paths on the main site aren't ours, and the app's own host is never redirected.
+    expect((await fetchAt("https://build40for40.com/gobblers")).status).not.toBe(301);
+    expect((await call("/privacy")).status).toBe(200);
+  });
+
   it("serves the privacy policy Google links to, and the home page links it", async () => {
     const privacy = await call("/privacy");
     expect(privacy.status).toBe(200);
