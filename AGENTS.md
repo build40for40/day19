@@ -19,13 +19,22 @@ We don’t need to solve for everything, everywhere, and all at once, but the wo
 
 Happy Thanksgiving team 🦃
 
+## User story
+
+Written by Samira on the day.
+
+- As a user I get surfaced 5 contacts a day from my Google Contacts list.
+- For each contact there are two options:
+  1. **Delete the contact.** It gets deleted from the Google Contacts list, but it is stored in the "Brain" (a markdown file) first.
+  2. **Keep the contact.** To keep it I have to fill out a short text box saying what I'm grateful for. The contact stays in Google Contacts, and the gratitude is saved into the Brain with the contact.
+
 ## What we're building
 
-A "hot or not" game for your contacts, played inside a Claude chat. One contact at a time, you either keep them, by saying a word of gratitude or saving something about them, or let them go.
+A "hot or not" game for your contacts, played inside a Claude chat, as a Claude and ChatGPT plugin (MCP).
 
 - The user installs the plugin and signs in with Google (OAuth), giving read and write access to contacts through the Google People API.
-- Contacts are archived to a database on a Cloudflare Worker first (the "brain"), so nothing is lost.
-- Claude shows a widget in the chat with keep, let go and "give me more context about this person". Kept contacts are saved with what was written. Let go removes the contact from Google Contacts.
+- Claude shows a widget in the chat with the day's 5 contacts, one at a time, each with delete and keep.
+- The Brain is the archive: every contact that leaves Google is written there first, and every kept contact is written there with its gratitude.
 - Nothing is sent to anyone. Recording the gratitude is the point.
 - A landing page explains it and how to install it.
 
