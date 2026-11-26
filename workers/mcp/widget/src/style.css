@@ -86,15 +86,15 @@ body {
 
 .avatar {
   flex: none;
-  width: 44px;
-  height: 44px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
   display: grid;
   place-items: center;
   background: var(--bg-soft);
   color: var(--text-2);
   font-weight: 500;
-  font-size: 14px;
+  font-size: 17px;
   object-fit: cover;
 }
 
@@ -133,8 +133,8 @@ body {
 
 button {
   font: inherit;
-  font-size: 14px;
-  min-height: 40px;
+  font-size: 15px;
+  min-height: 44px;
   padding: 0 14px;
   border-radius: var(--radius);
   border: 1px solid var(--line-strong);
@@ -198,10 +198,99 @@ textarea {
 }
 
 .error {
-  min-height: 20px;
-  margin: 6px 0 0;
+  margin: 8px 0 0;
   font-size: 13px;
   color: var(--danger);
+}
+
+.error:empty {
+  display: none;
+}
+
+.brand {
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* A new contact slides in like a dealt card. */
+.deal {
+  animation: deal 220ms ease-out;
+}
+
+@keyframes deal {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+.under {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.chips[hidden] {
+  display: none;
+}
+
+button.chip {
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 18px;
+  font-size: 13px;
+  color: var(--text-2);
+  text-align: left;
+}
+
+.toast {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+  padding: 4px 6px 4px 14px;
+  border-radius: var(--radius);
+  background: var(--bg-soft);
+  font-size: 13px;
+  color: var(--text-2);
+  overflow: hidden;
+}
+
+button.link {
+  border: 0;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Runs down while the undo is still on offer. */
+.timer {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 2px;
+  width: 100%;
+  background: var(--text-3);
+  transform-origin: left;
+  animation: countdown 5s linear forwards;
+}
+
+@keyframes countdown {
+  to {
+    transform: scaleX(0);
+  }
 }
 
 .done-title {
@@ -216,23 +305,67 @@ textarea {
   color: var(--text-2);
 }
 
-.list {
-  margin: 14px 0 0;
-  padding: 12px 0 0;
-  border-top: 1px solid var(--line);
-  list-style: none;
-  font-size: 13px;
+.thanks {
+  margin: 16px 0 0;
+  padding-left: 12px;
+  border-left: 3px solid var(--ok);
 }
 
-.list li {
-  padding: 4px 0;
+.thanks blockquote {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.45;
   overflow-wrap: anywhere;
 }
 
-.list .said {
+.thanks figcaption {
+  margin-top: 4px;
+  font-size: 13px;
   color: var(--text-2);
 }
 
-.list .gone {
+.gone {
+  margin: 14px 0 0;
+  font-size: 13px;
   color: var(--text-3);
+  overflow-wrap: anywhere;
+}
+
+.tracker {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.tracker-count {
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.bar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--bg-soft);
+  overflow: hidden;
+}
+
+.fill {
+  height: 100%;
+  min-width: 6px;
+  border-radius: 3px;
+  background: var(--ok);
+}
+
+.tracker-ahead {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .deal,
+  .timer {
+    animation: none;
+  }
 }

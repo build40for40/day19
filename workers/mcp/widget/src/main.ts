@@ -1,6 +1,6 @@
 import { App, applyDocumentTheme, applyHostFonts, applyHostStyleVariables, type McpUiHostContext } from '@modelcontextprotocol/ext-apps'
 
-import { MAX_GRATITUDE, MIN_GRATITUDE, type Batch, type Contact, type Progress } from '../../src/contract'
+import { BATCH_SIZE, MAX_GRATITUDE, MIN_GRATITUDE, type Batch, type Contact, type Progress } from '../../src/contract'
 import './style.css'
 import { fakeTools, mcpTools, type Tools } from './tools'
 
@@ -36,9 +36,12 @@ let busy = false
 let problem = ''
 let draft = ''
 
-const EXAMPLES = ['She told me my writing was worth reading', 'He taught me…', 'I still remember when…']
-/** The grey example in the box. It stays the same for a contact, and changes from one contact to the next. */
-const example = (contact: Contact) => EXAMPLES[(batch?.indexOf(contact) ?? 0) % EXAMPLES.length] ?? EXAMPLES[0]!
+/** How long a let go waits before it really happens, so there's time to take it back. */
+const UNDO_MS = 5000
+/** A let go that hasn't been sent to the server yet. */
+let pending: { contact: Contact; before: Progress | undefined; timer: ReturnType<typeof setTimeout> } | undefined
+/** The contact on screen last time, so a new one can be dealt in. */
+let shown: string | undefined
 
 const firstName = (contact: Contact) => contact.name.split(' ')[0] ?? contact.name
 const initials = (contact: Contact) =>
@@ -48,6 +51,22 @@ const initials = (contact: Contact) =>
     .join('')
     .slice(0, 2)
     .toUpperCase()
+
+/**
+ * Ways to start the line, built only from what the contact card already says: their name and where they work.
+ * They stop mid-sentence on purpose. The person finishes the thought, so the thanks is still theirs.
+ */
+function starters(contact: Contact): string[] {
+  const first = firstName(contact)
+  const org = contact.organisation.trim()
+  return [...(org ? [`At ${org}, ${first} `] : []), `${first} taught me `, `I still remember when ${first} `, 'Thank you for '].slice(0, 3)
+}
+
+/** What the person has added beyond a starter, so a starter on its own doesn't count as thanks. */
+function ownWords(text: string, contact: Contact) {
+  const starter = starters(contact).find((start) => text.startsWith(start.trim()))
+  return starter ? text.slice(starter.trim().length).trim() : text
+}
 
 const isBatch = (value: unknown): value is Batch =>
   typeof value === 'object' && value !== null && Array.isArray((value as Batch).contacts) && typeof (value as Batch).doneForToday === 'boolean'
@@ -61,6 +80,9 @@ function reset() {
 
 /** A fresh batch from the server: what a new widget starts from. */
 function start(next: Batch) {
+  if (pending) clearTimeout(pending.timer)
+  pending = undefined
+  shown = undefined
   batch = next.contacts
   progress = next.progress
   outcomes.clear()
@@ -82,6 +104,8 @@ async function decide(contact: Contact, run: () => Promise<{ progress: Progress 
   busy = true
   problem = ''
   render()
+  // A let go still waiting on its undo goes first, so the server hears things in the order they happened.
+  await commitLetGo()
   try {
     progress = (await run()).progress
     outcomes.set(contact.id, outcome)
@@ -100,14 +124,54 @@ async function decide(contact: Contact, run: () => Promise<{ progress: Progress 
   }
 }
 
+/** Let go moves straight on to the next contact, and only reaches the server once the undo has run out. */
+function letGo(contact: Contact) {
+  if (busy) return
+  void commitLetGo().then(() => {
+    const timer = setTimeout(() => void commitLetGo(), UNDO_MS)
+    pending = { contact, before: progress, timer }
+    outcomes.set(contact.id, { kind: 'let_go' })
+    if (progress) progress = { ...progress, decided: progress.decided + 1 }
+    reset()
+    render()
+  })
+}
+
+function undoLetGo() {
+  if (!pending) return
+  clearTimeout(pending.timer)
+  outcomes.delete(pending.contact.id)
+  progress = pending.before
+  pending = undefined
+  reset()
+  render()
+}
+
+/** Sends the waiting let go, if there is one. If it fails, the contact comes back with the reason. */
+async function commitLetGo() {
+  if (!pending) return
+  const { contact, before, timer } = pending
+  clearTimeout(timer)
+  pending = undefined
+  try {
+    progress = (await tools.letGo(contact.id)).progress
+    if (!fake) void app.updateModelContext({ content: [{ type: 'text', text: `I let ${contact.name} go in the widget. A copy is in the Brain.` }] }).catch(() => {})
+  } catch (error) {
+    outcomes.delete(contact.id)
+    progress = before
+    await catchUp().catch(() => {})
+    if (!outcomes.has(contact.id)) problem = error instanceof Error ? error.message : "That didn't save. Give it another go."
+  }
+  render()
+}
+
 function top(current: number) {
   const contacts = batch ?? []
   const today = current < contacts.length ? `${current + 1} of ${contacts.length} today` : 'Done for today'
-  const overall = progress ? `${progress.decided} of ${progress.total} sorted` : ''
   return h(
     'div',
     { class: 'top' },
-    h('span', {}, today, overall && h('span', { class: 'overall' }, ` · ${overall}`)),
+    h('span', {}, h('span', { class: 'brand' }, 'Gobbler'), h('span', { class: 'overall' }, ` · ${today}`)),
     h(
       'div',
       { class: 'dots', 'aria-hidden': 'true' },
@@ -146,15 +210,14 @@ function choose(contact: Contact) {
         {
           class: 'grow',
           'aria-busy': String(busy),
-          click: () =>
-            void decide(contact, () => tools.letGo(contact.id), { kind: 'let_go' }, `I let ${contact.name} go in the widget. A copy is in the Brain.`),
+          click: () => letGo(contact),
         },
         'Let go',
       ),
       h(
         'button',
         {
-          class: 'grow',
+          class: 'primary grow',
           click: () => {
             keeping = true
             problem = ''
@@ -171,20 +234,45 @@ function choose(contact: Contact) {
 }
 
 function gratitude(contact: Contact) {
-  const box = h('textarea', { id: 'gratitude', maxlength: String(MAX_GRATITUDE), placeholder: example(contact) })
+  const first = firstName(contact)
+  const ideas = starters(contact)
+  const box = h('textarea', { id: 'gratitude', maxlength: String(MAX_GRATITUDE), placeholder: `${ideas[0]}…`, 'aria-describedby': 'gratitude-help' })
   box.value = draft
   const error = h('p', { class: 'error', role: 'alert' }, problem)
+  const count = h('span', { class: 'count' })
+  const help = h('span', { id: 'gratitude-help' }, 'Tap a starter, or press → in the empty box.')
+
+  const use = (idea: string) => {
+    box.value = draft = idea
+    box.focus()
+    box.setSelectionRange(idea.length, idea.length)
+    refresh()
+  }
+  const chips = h('div', { class: 'chips' }, ...ideas.map((idea) => h('button', { type: 'button', class: 'chip', click: () => use(idea) }, `${idea.trim()}…`)))
+
+  // The starters are only offered while the box is empty or still holds one of them untouched.
+  function refresh() {
+    const left = MAX_GRATITUDE - box.value.length
+    count.textContent = left <= 40 ? `${left} left` : ''
+    chips.hidden = box.value !== '' && !ideas.includes(box.value)
+    help.style.visibility = chips.hidden ? 'hidden' : 'visible'
+  }
 
   box.addEventListener('input', () => {
     draft = box.value
     error.textContent = ''
     problem = ''
+    refresh()
   })
 
   const save = () => {
     const text = box.value.trim()
     if (text.length < MIN_GRATITUDE) {
-      error.textContent = problem = `No thanks, no keep. Give ${firstName(contact)} a line first.`
+      error.textContent = problem = `No thanks, no keep. Give ${first} a line first.`
+      return
+    }
+    if (ownWords(text, contact).length < MIN_GRATITUDE) {
+      error.textContent = problem = `Finish the line first. What did ${first} do?`
       return
     }
     void decide(
@@ -195,11 +283,26 @@ function gratitude(contact: Contact) {
     )
   }
 
+  box.addEventListener('keydown', (event) => {
+    // The right arrow or Tab in an empty box takes the grey suggestion, the way a search box does.
+    if ((event.key === 'ArrowRight' || event.key === 'Tab') && !event.shiftKey && box.value === '') {
+      event.preventDefault()
+      use(ideas[0]!)
+    }
+    if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
+      event.preventDefault()
+      save()
+    }
+  })
+  refresh()
+
   return h(
     'div',
     {},
-    h('label', { for: 'gratitude' }, `What are you grateful to ${firstName(contact)} for?`),
+    h('label', { for: 'gratitude' }, `What are you grateful to ${first} for?`),
     box,
+    h('div', { class: 'under' }, help, count),
+    chips,
     error,
     h(
       'div',
@@ -215,31 +318,43 @@ function gratitude(contact: Contact) {
         },
         'Back',
       ),
-      h('button', { class: 'primary grow', 'aria-busy': String(busy), click: save }, `Keep ${firstName(contact)}`),
+      h('button', { class: 'primary grow', 'aria-busy': String(busy), click: save }, `Keep ${first}`),
     ),
   )
 }
 
-/** What's waiting after today, so the done screen never promises five when fewer are left. */
-function tomorrow() {
-  const left = progress ? progress.total - progress.decided : 5
-  return left >= 5 ? 'Five more tomorrow.' : left > 0 ? 'The last few tomorrow.' : "That's everyone."
+/** How far through the whole list they are, and how long the rest takes at five a day. */
+function tracker() {
+  if (!progress || progress.total === 0) return false
+  const left = Math.max(progress.total - progress.decided, 0)
+  const days = Math.ceil(left / BATCH_SIZE)
+  const ahead = left === 0 ? "That's everyone. Nobody left to sort." : `${left} to go. At five a day, that's ${days === 1 ? 'one more day' : `${days} more days`}.`
+  const bar = h('div', { class: 'bar', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': String(progress.total), 'aria-valuenow': String(progress.decided) })
+  const fill = h('div', { class: 'fill' })
+  fill.style.width = `${Math.round((progress.decided / progress.total) * 100)}%`
+  bar.append(fill)
+  return h('div', { class: 'tracker' }, h('p', { class: 'tracker-count' }, `${progress.decided} of ${progress.total} sorted`), bar, h('p', { class: 'tracker-ahead' }, ahead))
 }
 
 function done(contacts: Contact[]) {
-  const kept = contacts.filter((contact) => outcomes.get(contact.id)?.kind === 'kept').length
-  const letGo = contacts.filter((contact) => outcomes.get(contact.id)?.kind === 'let_go').length
-  const line = (contact: Contact) => {
+  const by = (kind: Outcome['kind']) => contacts.filter((contact) => outcomes.get(contact.id)?.kind === kind)
+  const kept = by('kept')
+  const letGo = by('let_go')
+  const elsewhere = by('elsewhere')
+  const names = (list: Contact[]) => list.map((contact) => contact.name).join(', ')
+  const thanks = kept.map((contact) => {
     const outcome = outcomes.get(contact.id)
-    if (outcome?.kind === 'kept') return h('li', {}, `${contact.name}: `, h('span', { class: 'said' }, outcome.gratitude))
-    return h('li', { class: 'gone' }, outcome?.kind === 'let_go' ? `${contact.name}, let go` : `${contact.name}, decided in the chat`)
-  }
+    return h('figure', { class: 'thanks' }, h('blockquote', {}, outcome?.kind === 'kept' ? outcome.gratitude : ''), h('figcaption', {}, contact.name))
+  })
   return h(
     'div',
-    { class: 'card' },
-    h('p', { class: 'done-title' }, contacts.length ? `That's your ${contacts.length === 5 ? 'five' : 'lot'}. Well gobbled.` : "That's today done"),
-    h('p', { class: 'done-body' }, contacts.length ? `${kept} thanked, ${letGo} let go. ${tomorrow()}` : 'More contacts tomorrow.'),
-    contacts.length > 0 && h('ul', { class: 'list' }, ...contacts.map(line)),
+    { class: 'card deal' },
+    h('p', { class: 'done-title' }, contacts.length ? `That's your ${contacts.length === BATCH_SIZE ? 'five' : 'lot'}. Well gobbled.` : "That's today done"),
+    h('p', { class: 'done-body' }, contacts.length ? `${kept.length} thanked, ${letGo.length} let go.` : 'More contacts tomorrow.'),
+    ...thanks,
+    letGo.length > 0 && h('p', { class: 'gone' }, `Let go: ${names(letGo)}`),
+    elsewhere.length > 0 && h('p', { class: 'gone' }, `Sorted in the chat: ${names(elsewhere)}`),
+    tracker(),
     !fake &&
       h(
         'div',
@@ -253,6 +368,18 @@ function done(contacts: Contact[]) {
   )
 }
 
+/** The bar that follows a let go: who it was, and a few seconds to take it back. */
+function undoBar() {
+  if (!pending) return false
+  return h(
+    'div',
+    { class: 'toast', role: 'status' },
+    h('span', {}, `${pending.contact.name} let go`),
+    h('button', { type: 'button', class: 'link', click: undoLetGo }, 'Undo'),
+    h('span', { class: 'timer', 'aria-hidden': 'true' }),
+  )
+}
+
 function render() {
   if (!batch) {
     root.replaceChildren(h('div', { class: 'top' }, h('span', {}, problem || "Rounding up today's five…")))
@@ -260,12 +387,19 @@ function render() {
   }
   const current = batch.findIndex((contact) => !outcomes.has(contact.id))
   if (current < 0) {
-    root.replaceChildren(top(batch.length), done(batch))
+    const fresh = shown !== 'done'
+    shown = 'done'
+    const card = done(batch)
+    card.classList.toggle('deal', fresh)
+    root.replaceChildren(top(batch.length), card, undoBar() || '')
     return
   }
   const contact = batch[current]!
   const facts = h('div', { class: 'facts' }, ...[...contact.emails, ...contact.phones].map((fact) => h('div', {}, fact)))
-  root.replaceChildren(top(current), h('div', { class: 'card' }, who(contact), facts, keeping ? gratitude(contact) : choose(contact)))
+  // A new contact is dealt in. Redrawing the same one (opening the box, an error) stays still.
+  const card = h('div', { class: shown === contact.id ? 'card' : 'card deal' }, who(contact), facts, keeping ? gratitude(contact) : choose(contact))
+  shown = contact.id
+  root.replaceChildren(top(current), card, undoBar() || '')
 }
 
 function styleFromHost(context: McpUiHostContext) {
@@ -283,11 +417,15 @@ if (fake) {
     if (isBatch(result.structuredContent)) start(result.structuredContent)
   }
   app.onhostcontextchanged = styleFromHost
-  app.onteardown = async () => ({})
+  // Closing the widget counts as not wanting the undo, so a waiting let go is sent rather than lost.
+  app.onteardown = async () => {
+    await commitLetGo()
+    return {}
+  }
   app.onerror = console.error
   // Coming back to the widget after deciding in the chat: drop anyone the assistant has already dealt with.
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && batch && !busy && !keeping) void catchUp().then(render, () => {})
+    if (document.visibilityState === 'visible' && batch && !busy && !keeping && !pending) void catchUp().then(render, () => {})
   })
   void app.connect().then(() => {
     const context = app.getHostContext()
