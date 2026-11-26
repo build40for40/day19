@@ -3,7 +3,7 @@ import { App, applyDocumentTheme, applyHostFonts, applyHostStyleVariables, type 
 import { MAX_GRATITUDE, MIN_GRATITUDE, type Batch, type Contact, type Progress } from '../../src/contract'
 import './style.css'
 import { fakeTools, mcpTools, type Tools } from './tools'
-import { BLOCKED, canListen, listen, type Listener } from './voice'
+import { BLOCKED, canListen, listen, micProblem, type Listener } from './voice'
 
 type Child = Node | string | false | undefined
 type Props = Record<string, string | boolean | ((event: Event) => void)>
@@ -197,9 +197,16 @@ function gratitude(contact: Contact) {
     if (why) error.textContent = problem = why
   }
 
-  mic.addEventListener('click', () => {
+  mic.addEventListener('click', async () => {
     error.textContent = problem = ''
     if (listener) return stopListening()
+    status.textContent = 'Checking the mic…'
+    const blocked = await micProblem()
+    status.textContent = ''
+    if (blocked) {
+      error.textContent = problem = blocked
+      return
+    }
     const before = box.value.trim()
     listener = listen({
       onText: (text) => {
