@@ -36,7 +36,7 @@ body{margin:0}
 .btn.line{background:transparent;color:inherit;box-shadow:inset 0 0 0 3px currentColor}
 
 .top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 28px;padding-top:20px;padding-bottom:20px;font-size:16px;font-weight:600;letter-spacing:.005em}
-.logo{display:flex;align-items:center;gap:12px;color:rgba(255,244,230,.8);text-decoration:none;--tk-line:#FFF4E6;--tk-body:#4A1410}
+.logo{display:flex;align-items:center;gap:12px;color:rgba(255,244,230,.8);text-decoration:none;--tk-line:#FFF4E6;--tk-body:#4A1410;--tk-gap:#4A1410}
 .logo .tk{width:46px;height:46px}
 .top nav{display:flex;flex-wrap:wrap;gap:32px}
 .top nav a{color:var(--cr);text-decoration:none}
@@ -127,20 +127,25 @@ body{margin:0}
 <div class="pg">
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
-<symbol id="turkey" viewBox="-7 -5 98 84">
-<g transform="rotate(-65 44 50)"><ellipse style="fill:var(--tk-gone,var(--tk-keep,#E9573B))" cx="44" cy="20" rx="6.5" ry="17"></ellipse></g>
-<g transform="rotate(-32.5 44 50)"><ellipse style="fill:var(--tk-keep,#E9573B)" cx="44" cy="20" rx="6.5" ry="17"></ellipse></g>
-<ellipse style="fill:var(--tk-gone,var(--tk-keep,#E9573B))" cx="44" cy="20" rx="6.5" ry="17"></ellipse>
-<g transform="rotate(32.5 44 50)"><ellipse style="fill:var(--tk-keep,#E9573B)" cx="44" cy="20" rx="6.5" ry="17"></ellipse></g>
-<g transform="rotate(65 44 50)"><ellipse style="fill:var(--tk-gone,var(--tk-keep,#E9573B))" cx="44" cy="20" rx="6.5" ry="17"></ellipse></g>
+<symbol id="turkey" viewBox="1 -3 82 82">
+<g transform="translate(0 52) scale(1 1.25) translate(0 -52)">
+  <path style="fill:var(--tk-tip,#F7B9A6);stroke:var(--tk-gap,#FFF4E6);stroke-width:1.6;stroke-linejoin:round" d="M40 52L5.5 58.1A11.4 11.4 0 0 1 8.2 37.5Z"></path>
+  <path style="fill:var(--tk-tip,#F7B9A6);stroke:var(--tk-gap,#FFF4E6);stroke-width:1.6;stroke-linejoin:round" d="M40 52L8.2 37.5A11.4 11.4 0 0 1 22 22Z"></path>
+  <path style="fill:var(--tk-tip,#F7B9A6);stroke:var(--tk-gap,#FFF4E6);stroke-width:1.6;stroke-linejoin:round" d="M40 52L22 22A11.4 11.4 0 0 1 42.1 17.1Z"></path>
+  <path style="fill:var(--tk-tip,#F7B9A6);stroke:var(--tk-gap,#FFF4E6);stroke-width:1.6;stroke-linejoin:round" d="M40 52L42.1 17.1A11.4 11.4 0 0 1 61.5 24.4Z"></path>
+  <path style="fill:var(--tk-keep,#E9573B);stroke:var(--tk-gap,#FFF4E6);stroke-width:1.6;stroke-linejoin:round" d="M40 52L10.9 57.1A9.6 9.6 0 0 1 13.2 39.8Z"></path>
+  <path style="fill:var(--tk-keep,#E9573B);stroke:var(--tk-gap,#FFF4E6);stroke-width:1.6;stroke-linejoin:round" d="M40 52L13.2 39.8A9.6 9.6 0 0 1 24.8 26.7Z"></path>
+  <path style="fill:var(--tk-keep,#E9573B);stroke:var(--tk-gap,#FFF4E6);stroke-width:1.6;stroke-linejoin:round" d="M40 52L24.8 26.7A9.6 9.6 0 0 1 41.8 22.6Z"></path>
+  <path style="fill:var(--tk-keep,#E9573B);stroke:var(--tk-gap,#FFF4E6);stroke-width:1.6;stroke-linejoin:round" d="M40 52L41.8 22.6A9.6 9.6 0 0 1 58.2 28.8Z"></path>
+</g>
 <path style="fill:none;stroke:var(--tk-line,#4A1410);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round" d="M38 66v6M50 66v6M34 72h8M46 72h8"></path>
 <circle style="fill:var(--tk-body,#FFF4E6);stroke:var(--tk-line,#4A1410);stroke-width:2.5" cx="44" cy="50" r="17"></circle>
 <path style="fill:none;stroke:var(--tk-line,#4A1410);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round" d="M34 50c2 8 12 9 16 2"></path>
 <path style="fill:none;stroke:var(--tk-body,#FFF4E6);stroke-width:9;stroke-linecap:round" d="M56 46c4-4 6-9 6-14"></path>
 <circle style="fill:var(--tk-body,#FFF4E6);stroke:var(--tk-line,#4A1410);stroke-width:2.5" cx="63" cy="28" r="8"></circle>
 <circle style="fill:var(--tk-line,#4A1410)" cx="65.5" cy="26" r="1.6"></circle>
-<path fill="#E9573B" d="M70 25l9 3-9 1zM70 29l8 0-8 3z"></path>
-<path fill="#E9573B" d="M69 32c3 0 4 3 2 6-2 0-3-3-2-6z"></path>
+<path style="fill:var(--tk-keep,#E9573B)" d="M70 25l9 3-9 1zM70 29l8 0-8 3z"></path>
+<path style="fill:var(--tk-keep,#E9573B)" d="M69 32c3 0 4 3 2 6-2 0-3-3-2-6z"></path>
 </symbol>
 </svg>
 

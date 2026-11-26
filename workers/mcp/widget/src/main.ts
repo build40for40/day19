@@ -55,21 +55,25 @@ function buzz(pattern: number | number[]) {
 }
 
 /**
- * The turkey on the done screen. Its tail has one feather for each of today's contacts, gold for someone thanked and
- * grey for someone let go, and it gobbles up the crumbs. Only the kind of each outcome goes into the drawing, never
- * a name or anything else from the contacts, so it is safe to set as HTML.
+ * The turkey's tail: four rounded feathers side by side with pale tips, fanning up from behind the back to the head,
+ * stretched a little taller than a half circle. Each feather is drawn twice, the pale tip and then the gold inside it.
  */
-function turkey(kinds: Array<Outcome['kind'] | undefined>) {
-  const spread = kinds.length > 1 ? 130 / (kinds.length - 1) : 0
-  const feathers = kinds
-    .map((kind, i) => {
-      const angle = kinds.length > 1 ? -65 + spread * i : 0
-      return `<g transform="rotate(${angle.toFixed(1)} 44 50)"><ellipse class="feather ${kind === 'kept' ? 'thanked' : 'gone'}" style="animation-delay:${150 + i * 110}ms" cx="44" cy="20" rx="6.5" ry="17"/></g>`
-    })
-    .join('')
+const TAIL = `<g transform="translate(0 52) scale(1 1.25) translate(0 -52)">
+  <path class="feather-tip" d="M40 52L5.5 58.1A11.4 11.4 0 0 1 8.2 37.5Z"/>
+  <path class="feather-tip" d="M40 52L8.2 37.5A11.4 11.4 0 0 1 22 22Z"/>
+  <path class="feather-tip" d="M40 52L22 22A11.4 11.4 0 0 1 42.1 17.1Z"/>
+  <path class="feather-tip" d="M40 52L42.1 17.1A11.4 11.4 0 0 1 61.5 24.4Z"/>
+  <path class="feather" d="M40 52L10.9 57.1A9.6 9.6 0 0 1 13.2 39.8Z"/>
+  <path class="feather" d="M40 52L13.2 39.8A9.6 9.6 0 0 1 24.8 26.7Z"/>
+  <path class="feather" d="M40 52L24.8 26.7A9.6 9.6 0 0 1 41.8 22.6Z"/>
+  <path class="feather" d="M40 52L41.8 22.6A9.6 9.6 0 0 1 58.2 28.8Z"/>
+</g>`
+
+/** The turkey on the done screen. It pecks up the crumbs. Nothing from the contacts goes into it. */
+function turkey() {
   const bird = h('div', { class: 'turkey' })
   bird.innerHTML = `<svg viewBox="0 0 104 76" width="104" height="76" aria-hidden="true">
-  ${feathers}
+  ${TAIL}
   <path class="bird-line" d="M38 66v6M50 66v6M34 72h8M46 72h8"/>
   <circle class="bird-body" cx="44" cy="50" r="17"/>
   <path class="bird-wing" d="M34 50c2 8 12 9 16 2"/>
@@ -399,7 +403,7 @@ function done(contacts: Contact[]) {
   return h(
     'div',
     { class: 'card deal done' },
-    turkey(contacts.map((contact) => outcomes.get(contact.id)?.kind)),
+    turkey(),
     h('p', { class: 'done-title' }, contacts.length ? `That's your ${contacts.length === BATCH_SIZE ? 'five' : 'lot'}. Well gobbled.` : "That's today done"),
     h('p', { class: 'done-body' }, contacts.length ? `${kept.length} thanked, ${letGo.length} let go.` : left > 0 ? 'More tomorrow, or go again now.' : 'Your list is clean.'),
     ...thanks,
