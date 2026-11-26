@@ -2,6 +2,8 @@ import { cloudflareTest } from "@cloudflare/vitest-plugin";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
+  // The first test in each file starts the Workers runtime, which can take over 5s on CI.
+  test: { testTimeout: 20_000 },
   plugins: [
     cloudflareTest({
       wrangler: { configPath: "./wrangler.jsonc" },

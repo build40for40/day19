@@ -21,18 +21,31 @@ export interface Progress {
 
 /** What `start_game` and `next_contacts` return. */
 export interface Batch {
-  /** Up to `limit` contacts nobody has decided on yet, A to Z. */
+  /** Up to `limit` of today's contacts still to decide: new ones first, then kept people back for fresh thanks. */
   contacts: Contact[]
   progress: Progress
-  /** True once today's contacts are all decided. The next ones come tomorrow. */
+  /** True once today's contacts are all decided. The next ones come tomorrow, or now with `more`. */
   doneForToday: boolean
+  /** How many kept people could be thanked again right now with `more`, even with nobody new left to sort. */
+  thankAgain?: number
+  /** For contacts in this batch who were kept before: what they were last thanked for, and when. */
+  thankedBefore?: Record<string, { gratitude: string; at: string }>
 }
+
+/**
+ * What happened to the thank-you draft when someone was kept, signed in only:
+ * saved in their Gmail drafts, skipped for want of an email address, waiting on the person to
+ * sign in again with Gmail drafts allowed, or failed.
+ */
+export type DraftStatus = 'saved' | 'no_email' | 'needs_permission' | 'failed'
 
 /** What `keep_contact` and `let_go_contact` return. */
 export interface Decided {
   id: string
   decision: 'kept' | 'let_go'
   progress: Progress
+  /** Keeps only, signed in only. Missing in the demo. */
+  draft?: DraftStatus
 }
 
 export const TOOL = {

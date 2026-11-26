@@ -1,4 +1,4 @@
-import { BATCH_SIZE, MAX_GRATITUDE, TOOL, type Batch, type Decided, type Progress } from '../contract'
+import { BATCH_SIZE, MAX_GRATITUDE, TOOL, type Batch, type Decided, type DraftStatus, type Progress } from '../contract'
 
 export const SERVER_NAME = 'gobbler'
 export const THANKS_TOOL = 'thank_you_notes'
@@ -18,7 +18,7 @@ export const THANKS_BRIEF = `- Call ${THANKS_TOOL}. With no arguments it returns
 
 export const SERVER_INSTRUCTIONS = `This is Gobbler, a daily gratitude game for the person's contacts list. Each day it surfaces ${BATCH_SIZE} contacts. Each one is either let go, or kept by saying what the person is grateful to them for. Everything is saved to the person's Brain, a markdown file, so nobody is ever lost.
 
-Gobbler is not an inbox, email or calendar cleaner, and it never deletes in bulk. It does draft thank-you emails to the people the person kept, when they ask (below).
+Gobbler is not an inbox, email or calendar cleaner, and it never deletes in bulk. When someone signed in with Google keeps a contact, Gobbler itself saves a thank-you email to that contact in their Gmail drafts, straight away. It never sends anything. Don't draft those again yourself unless the person asks for a rewrite.
 
 Starting the game: the person's way in is "Let's Gobble". Call ${TOOL.start} straight away for that and anything like it, typos included: "lets gobble", "let gobble", "lets gobbel", "lets gobbler", "I'd like to gobble now", "gobble my contacts", "time to gobble", "play Gobbler", "open Gobbler". Also call it when they ask to clean up or sort the people in their contacts while Gobbler is connected. Asking for thank-you emails to people already kept is different: that's ${THANKS_TOOL}. Don't ask them to confirm first.
 
@@ -28,9 +28,10 @@ Starting the game: the person's way in is "Let's Gobble". Call ${TOOL.start} str
 - Only call ${TOOL.letGo} when the person clearly says to let go of or delete that contact. It deletes the contact from their contacts list and from any phone synced to it. A copy stays in the Brain.
 - After deciding in the chat, call ${TOOL.start} again if they want to see where they are.
 - Five a day is the habit, not a limit. When today's are done and the person asks for more ("five more", "keep going"), call ${TOOL.next} with more set to true, then ${TOOL.start}. Don't deal more unless they ask.
+- A clean list isn't the end. People who were kept come back round for fresh thanks, any day after the one they were last thanked on, once nobody new is left to sort. Keeping them again saves new thanks (and, signed in, a new Gmail draft). Earlier thanks stay in the Brain. Never reuse last time's words for them.
 - This server never sends anything to the contacts themselves.
 
-Thank-you emails. Write them without asking first when a round is done: a ${TOOL.keep} or ${TOOL.letGo} result says today's contacts are done, or the person says they've finished their five. Also write them whenever the person asks ("draft thank-yous", "write to Jeff", "email the people I kept"). Drafts are never sent, so there's nothing to confirm:
+Thank-you emails. Signed in with Google, Gobbler saves one in Gmail drafts for each person as they're kept, and every ${TOOL.keep} result says whether it did. So don't write them yourself just because a round ended. Write them only when the person asks ("draft thank-yous", "rewrite the one to Jeff", "email the people I kept"), or in the demo, where nobody is signed in. Drafts are never sent, so there's nothing to confirm:
 ${THANKS_BRIEF}`
 
 export const TEXT = {
@@ -66,7 +67,7 @@ export const TEXT = {
   thanks: {
     title: 'Thank-you notes',
     description:
-      "Call this as soon as a round of Gobbler is done (a keep or let go result says so, or the person says they've finished), without asking, and whenever the person asks for thank-you emails or notes to the people they kept. Returns everyone kept who has no draft yet, newest first, with their email addresses and what the person is grateful to them for, plus the rules for writing the drafts. Then write each email and save it as a draft with the person's email tool (such as Gmail). Never send it.",
+      "Only when the person asks for thank-you emails or notes to the people they kept, or asks you to rewrite one. When signed in with Google, Gobbler already saves a Gmail draft for each person as they're kept, so don't call this just because a round ended. Returns everyone kept who has no draft yet, newest first (or one person with id, or everyone with all), with their email addresses and what the person is grateful to them for, plus the rules for writing the drafts. Then write each email and save it as a draft with the person's email tool (such as Gmail). Never send it.",
     id: 'Only this contact, drafted again even if it already has one.',
     all: 'Everyone kept, including those who already have a draft.',
   },
@@ -100,19 +101,34 @@ export const RESET_TOOL = 'reset_demo'
 const progressText = ({ decided, total }: Progress) => `${decided} of ${total} contacts decided so far.`
 
 /** What the model reads. The widget reads the structured version of the same thing. */
-export function batchText({ contacts, progress, doneForToday }: Batch): string {
+export function batchText(batch: Batch): string {
+  const { contacts, progress, doneForToday, thankedBefore } = batch
   if (doneForToday) {
-    const more = progress.total > progress.decided ? ` More tomorrow, or if they ask to keep going, call ${TOOL.next} with more set to true and then ${TOOL.start} to show them.` : ' Nobody is left to sort.'
+    const more = progress.total > progress.decided
+      ? ` More tomorrow, or if they ask to keep going, call ${TOOL.next} with more set to true and then ${TOOL.start} to show them.`
+      : batch.thankAgain
+        ? ` Everyone is sorted, but ${batch.thankAgain} kept ${batch.thankAgain === 1 ? 'person' : 'people'} can be thanked again. If they want to keep going, call ${TOOL.next} with more set to true and then ${TOOL.start}.`
+        : ' Everyone is sorted and thanked for today. Kept people come back round tomorrow for fresh thanks.'
     return `That's today's contacts done.${more} ${progressText(progress)}`
   }
-  const lines = contacts.map((contact) => `- ${contact.name} (id ${contact.id}${contact.organisation ? `, ${contact.organisation}` : ''})`)
+  const lines = contacts.map((contact) => {
+    const before = thankedBefore?.[contact.id]
+    return `- ${contact.name} (id ${contact.id}${contact.organisation ? `, ${contact.organisation}` : ''})${before ? `, back for fresh thanks: last time they said "${before.gratitude}"` : ''}`
+  })
   return [`${contacts.length} still to decide today. ${progressText(progress)}`, ...lines].join('\n')
 }
 
-/** Added to a keep or let go result when it finishes the round, so the assistant drafts the thank-yous. */
-export const ROUND_DONE = `That's today's contacts done. Now call ${THANKS_TOOL} and save a Gmail draft for each new thank-you, without asking first.`
+/** Added to a signed-in keep or let go result when it finishes the round. The drafts are already saved. */
+export const ROUND_DONE = `That's today's contacts done. Gobbler saved a thank-you in their Gmail drafts for everyone kept with an email address, as each was kept. Tell them the drafts are waiting there, unsent. Don't draft them again unless they ask.`
 
-export const decidedText = ({ decision, progress }: Decided) =>
-  `${decision === 'kept' ? 'Kept, and the gratitude is saved in the Brain.' : 'Let go. A copy is in the Brain.'} ${progressText(progress)}`
+const DRAFT_TEXT: Record<DraftStatus, string> = {
+  saved: 'A thank-you to them is saved in their Gmail drafts, not sent.',
+  no_email: 'No email address for this contact, so no thank-you draft.',
+  needs_permission: 'No thank-you draft: the Google sign-in needs Gmail drafts allowed. Disconnect and reconnect Gobbler to allow it.',
+  failed: "The thank-you draft didn't save this time.",
+}
+
+export const decidedText = ({ decision, progress, draft }: Decided) =>
+  `${decision === 'kept' ? 'Kept, and the gratitude is saved in the Brain.' : 'Let go. A copy is in the Brain.'}${draft ? ` ${DRAFT_TEXT[draft]}` : ''} ${progressText(progress)}`
 
 export { progressText }

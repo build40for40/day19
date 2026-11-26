@@ -6,6 +6,8 @@ export const GOOGLE_SCOPES = [
   "profile",
   // Read and write, so "let go" can delete and "keep" can add to Notes later.
   "https://www.googleapis.com/auth/contacts",
+  // Drafts only: every keep saves a thank-you to that person as a Gmail draft. Nothing is ever sent (gmail.ts).
+  "https://www.googleapis.com/auth/gmail.compose",
 ];
 
 const AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";

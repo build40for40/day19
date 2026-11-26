@@ -27,8 +27,8 @@ A contact is `{ id, name, emails[], phones[], photoUrl, organisation }`. `photoU
 | Tool | Arguments | Returns (`structuredContent`) |
 | --- | --- | --- |
 | `start_game` | none | `{ contacts[], progress, doneForToday }`, and opens the widget |
-| `next_contacts` | `{ limit?, more? }`, limit 1 to 5, default 5 | `{ contacts[], progress, doneForToday }` |
-| `keep_contact` | `{ id, gratitude }` | `{ id, decision: "kept", progress }` |
+| `next_contacts` | `{ limit?, more? }`, limit 1 to 5, default 5 | `{ contacts[], progress, doneForToday, thankAgain?, thankedBefore? }` |
+| `keep_contact` | `{ id, gratitude }` | `{ id, decision: "kept", progress, draft? }` |
 | `let_go_contact` | `{ id }` | `{ id, decision: "let_go", progress }` |
 | `progress` | none | `{ decided, total }` |
 
@@ -46,6 +46,22 @@ Extra tools sit outside the contract: `read_brain` (the Brain as markdown), `res
 ### Thank-you emails
 
 When a round of five is done, or whenever the person asks, the assistant calls `thank_you_notes`, without asking first. The widget's done screen sends "Draft thank-you emails for the people I just kept…" into the chat as the person when anyone was kept, and a `keep_contact` or `let_go_contact` result that finishes the round tells the assistant to draft. The tool returns only kept contacts with no draft yet (it marks them `drafted` in the Brain), or one `id`, or `all`. their names, emails and gratitude, newest first, and turns each rough gratitude into a short, coherent thank-you with a subject line. The server instructions tell it to rephrase only, adding no facts, and to save drafts through whatever email tool the person has connected to the chat app (Gmail's own connector in Claude), never to send them. With no email tool it shows the drafts with a `mailto:` link. Every draft ends with a fixed P.S. (`THANKS_PS` in `src/mcp/text.ts`) saying it came from Gobbler, with the plain address and no tracking, unless the person asks to drop it. That's the word of mouth loop. Our Google sign-in has no Gmail scope and doesn't need one. The widget doesn't change.
+
+### Kept people come back round
+
+A clean list isn't the end, because one thank-you shouldn't be the last. Friendship doesn't lapse: someone kept can come back into a day's hand for fresh thanks any day after the one they were last thanked on, oldest thanks first, after anyone not yet sorted (`src/game.ts` `candidates`). `next_contacts` with `more` deals them too, skipping anyone decided today, so the person can always keep going. Nobody let go ever comes back.
+
+- Keeping someone again saves the new gratitude and moves the old one into `earlier` on their Brain entry, which the Brain's markdown lists. Signed in, it also saves a new Gmail draft.
+- A returning person counts as waiting until they're decided again today. Nobody comes back the same day they were decided. Their `id` stays the same, so the contract doesn't change, but `Batch` gains `thankedBefore` (what they were last thanked for, and when) and `thankAgain` (how many kept people `more` could bring back now).
+- The widget shows "Back for more thanks. On 3 Dec you said: …" on a returning card, and once nobody is left to sort, a "Thank five more" button when `thankAgain` is above zero.
+
+### Thank-you drafts on every keep
+
+Signed in, every keep saves a thank-you to that contact in the person's Gmail drafts, straight away (`src/brain.ts` `draftThankYou`, `src/gmail.ts`). It is never sent. The email is "Hi <first name>," + one to three sentences + the sign-off + `THANKS_PS`, the shareable P.S. Claude (`claude-opus-5-5` at low effort, `src/thankyou.ts`) turns the person's note into the sentences, adding nothing they didn't say. Without `ANTHROPIC_API_KEY`, or if that call fails, a template quotes their words as written, so a keep always gets its draft.
+
+- `keep_contact` returns `draft`: `saved`, `no_email`, `needs_permission` (signed in before `gmail.compose` was added: reconnect) or `failed`. The keep counts whatever happens to the draft. The demo returns no `draft`.
+- The widget shows each kept card's draft status and an "Open Gmail drafts" button. It no longer drops a "draft my thank-yous" message into the chat at the end of a round: in the demo, a "Draft thank-yous" button does that instead.
+- Google scopes: `contacts` and `gmail.compose` (restricted, so the app stays unverified with its 100-user cap). `ANTHROPIC_API_KEY` is the org's GitHub secret, set on the Worker by the deploy.
 
 ### Two ways to give the gratitude
 

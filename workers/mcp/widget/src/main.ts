@@ -1,6 +1,6 @@
 import { App, applyDocumentTheme, applyHostFonts, applyHostStyleVariables, type McpUiHostContext } from '@modelcontextprotocol/ext-apps'
 
-import { BATCH_SIZE, MAX_GRATITUDE, MIN_GRATITUDE, type Batch, type Contact, type Progress } from '../../src/contract'
+import { BATCH_SIZE, MAX_GRATITUDE, MIN_GRATITUDE, type Batch, type Contact, type DraftStatus, type Progress } from '../../src/contract'
 import './style.css'
 import { fakeTools, mcpTools, type Tools } from './tools'
 
@@ -19,7 +19,18 @@ function h<K extends keyof HTMLElementTagNameMap>(tag: K, props: Props = {}, ...
   return el
 }
 
-type Outcome = { kind: 'kept'; gratitude: string } | { kind: 'let_go' } | { kind: 'elsewhere' }
+type Outcome = { kind: 'kept'; gratitude: string; draft?: DraftStatus } | { kind: 'let_go' } | { kind: 'elsewhere' }
+
+/** Where Open Gmail drafts goes. Gobbler saves a draft there on every keep when signed in. */
+const GMAIL_DRAFTS_URL = 'https://mail.google.com/mail/u/0/#drafts'
+
+/** What each kept card says about its thank-you draft. */
+const DRAFT_NOTE: Record<DraftStatus, string> = {
+  saved: '✓ Thank-you saved in your Gmail drafts',
+  no_email: 'No email address, so no draft',
+  needs_permission: 'No draft: reconnect Gobbler and allow Gmail drafts',
+  failed: "The draft didn't save this time",
+}
 
 // `?fake=1`, or opening the page on its own in a browser tab, plays the game on made-up contacts with no server.
 const fake = new URLSearchParams(location.search).has('fake') || window.parent === window
@@ -30,6 +41,10 @@ const tools: Tools = fake ? fakeTools() : mcpTools(app)
 
 let batch: Contact[] | undefined
 let progress: Progress | undefined
+/** Kept people in this batch, back for fresh thanks: what they were thanked for last time. */
+let thankedBefore: NonNullable<Batch['thankedBefore']> = {}
+/** How many kept people could be thanked again now, so a clean list can still go again. */
+let thankAgain = 0
 const outcomes = new Map<string, Outcome>()
 let keeping = false
 let busy = false
@@ -134,6 +149,8 @@ function start(next: Batch) {
   shown = undefined
   batch = next.contacts
   progress = next.progress
+  thankedBefore = next.thankedBefore ?? {}
+  thankAgain = next.thankAgain ?? 0
   outcomes.clear()
   reset()
   render()
@@ -142,13 +159,14 @@ function start(next: Batch) {
 /** Checks the server for what's still waiting, so a contact decided by talking to the assistant doesn't get asked twice. */
 async function catchUp() {
   if (!batch) return
-  const { contacts, progress: latest } = await tools.next()
+  const { contacts, progress: latest, thankAgain: again } = await tools.next()
+  thankAgain = again ?? thankAgain
   const waiting = new Set(contacts.map((contact) => contact.id))
   for (const contact of batch) if (!outcomes.has(contact.id) && !waiting.has(contact.id)) outcomes.set(contact.id, { kind: 'elsewhere' })
   progress = latest
 }
 
-async function decide(contact: Contact, run: () => Promise<{ progress: Progress }>, outcome: Outcome, said: string) {
+async function decide(contact: Contact, run: () => Promise<{ progress: Progress; draft?: DraftStatus }>, outcome: Outcome, said: string) {
   if (busy) return
   busy = true
   problem = ''
@@ -156,8 +174,9 @@ async function decide(contact: Contact, run: () => Promise<{ progress: Progress 
   // A let go still waiting on its undo goes first, so the server hears things in the order they happened.
   await commitLetGo()
   try {
-    progress = (await run()).progress
-    outcomes.set(contact.id, outcome)
+    const result = await run()
+    progress = result.progress
+    outcomes.set(contact.id, outcome.kind === 'kept' && result.draft ? { ...outcome, draft: result.draft } : outcome)
     justDecided = contact.id
     buzz(12)
     reset()
@@ -247,8 +266,20 @@ function who(contact: Contact) {
     'div',
     { class: 'who' },
     avatar(contact),
-    h('div', {}, h('p', { class: 'name' }, contact.name), contact.organisation ? h('p', { class: 'detail' }, contact.organisation) : false),
+    h(
+      'div',
+      {},
+      h('p', { class: 'name' }, contact.name),
+      contact.organisation ? h('p', { class: 'detail' }, contact.organisation) : false,
+      thankedBefore[contact.id] ? h('p', { class: 'before' }, lastTime(thankedBefore[contact.id]!)) : false,
+    ),
   )
+}
+
+/** For someone back for fresh thanks: what they were thanked for last time, so this time can be new. */
+function lastTime({ gratitude, at }: { gratitude: string; at: string }) {
+  const when = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', day: 'numeric', month: 'short' }).format(new Date(at))
+  return `Back for more thanks. On ${when} you said: "${gratitude}"`
 }
 
 function choose(contact: Contact) {
@@ -381,7 +412,7 @@ function tracker() {
   if (!progress || progress.total === 0) return false
   const left = Math.max(progress.total - progress.decided, 0)
   const days = Math.ceil(left / BATCH_SIZE)
-  const ahead = left === 0 ? "That's everyone. Nobody left to sort." : `${left} to go. At five a day, that's ${days === 1 ? 'one more day' : `${days} more days`}.`
+  const ahead = left === 0 ? "That's everyone sorted. The people you kept come back round for fresh thanks." : `${left} to go. At five a day, that's ${days === 1 ? 'one more day' : `${days} more days`}.`
   const bar = h('div', { class: 'bar', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': String(progress.total), 'aria-valuenow': String(progress.decided) })
   const fill = h('div', { class: 'fill' })
   fill.style.width = `${Math.round((progress.decided / progress.total) * 100)}%`
@@ -398,20 +429,37 @@ function done(contacts: Contact[]) {
   const left = progress ? Math.max(progress.total - progress.decided, 0) : 0
   const thanks = kept.map((contact) => {
     const outcome = outcomes.get(contact.id)
-    return h('figure', { class: 'thanks' }, h('blockquote', {}, outcome?.kind === 'kept' ? outcome.gratitude : ''), h('figcaption', {}, contact.name))
+    const draft = outcome?.kind === 'kept' ? outcome.draft : undefined
+    return h(
+      'figure',
+      { class: 'thanks' },
+      h('blockquote', {}, outcome?.kind === 'kept' ? outcome.gratitude : ''),
+      h('figcaption', {}, contact.name),
+      draft && h('p', { class: `draft draft-${draft}` }, DRAFT_NOTE[draft]),
+    )
+  })
+  const drafts = kept.filter((contact) => {
+    const outcome = outcomes.get(contact.id)
+    return outcome?.kind === 'kept' && outcome.draft === 'saved'
+  }).length
+  // Signed in, every keep already saved its own draft. In the demo nothing did, so offer to have the assistant write them.
+  const signedIn = kept.some((contact) => {
+    const outcome = outcomes.get(contact.id)
+    return outcome?.kind === 'kept' && outcome.draft !== undefined
   })
   return h(
     'div',
     { class: 'card deal done' },
     turkey(),
     h('p', { class: 'done-title' }, contacts.length ? `That's your ${contacts.length === BATCH_SIZE ? 'five' : 'lot'}. Well gobbled.` : "That's today done"),
-    h('p', { class: 'done-body' }, contacts.length ? `${kept.length} thanked, ${letGo.length} let go.` : left > 0 ? 'More tomorrow, or go again now.' : 'Your list is clean.'),
+    h('p', { class: 'done-body' }, contacts.length ? `${kept.length} thanked, ${letGo.length} let go.` : left > 0 || thankAgain > 0 ? 'More tomorrow, or go again now.' : 'Your list is clean.'),
+    drafts > 0 && h('p', { class: 'done-drafts' }, `${drafts === 1 ? 'One thank-you is' : `${drafts} thank-yous are`} waiting in your Gmail drafts. Nothing gets sent until you send it.`),
     ...thanks,
     letGo.length > 0 && h('p', { class: 'gone' }, `Let go: ${names(letGo)}`),
     elsewhere.length > 0 && h('p', { class: 'gone' }, `Sorted in the chat: ${names(elsewhere)}`),
     tracker(),
     h('p', { class: 'error', role: 'alert' }, problem),
-    (left > 0 || !fake) &&
+    (left > 0 || thankAgain > 0 || !fake) &&
       h(
         'div',
         { class: 'row' },
@@ -421,16 +469,22 @@ function done(contacts: Contact[]) {
             { click: () => void app.sendMessage({ role: 'user', content: [{ type: 'text', text: 'Show me my Brain.' }] }).catch(() => {}) },
             'Read my Brain',
           ),
+        !fake && drafts > 0 && h('button', { click: () => void app.openLink({ url: GMAIL_DRAFTS_URL }).catch(() => {}) }, 'Open Gmail drafts'),
+        !fake && !signedIn && kept.length > 0 && h('button', { click: () => askForDrafts() }, 'Draft thank-yous'),
         // Five a day is the habit, not a wall: anyone on a roll can go again.
         left > 0 && h('button', { class: 'primary grow', 'aria-busy': String(busy), click: () => void goAgain() }, left >= BATCH_SIZE ? 'Five more' : `The last ${left}`),
+        // A clean list isn't the end: the people you kept come back round for fresh thanks.
+        left === 0 &&
+          thankAgain > 0 &&
+          h('button', { class: 'primary grow', 'aria-busy': String(busy), click: () => void goAgain() }, thankAgain >= BATCH_SIZE ? 'Thank five more' : `Thank ${thankAgain} more`),
       ),
   )
 }
 
-/** Once a round ends with someone kept, asks the assistant (as the person) to draft their thank-yous in Gmail. Drafts are never sent. */
+/** Demo only, from its button: asks the assistant to write the thank-yous, since nobody is signed in to save them. Signed in, each keep saves its own draft. */
 function askForDrafts() {
   if (fake || !batch?.some((contact) => outcomes.get(contact.id)?.kind === 'kept')) return
-  const text = "That's my five done. Draft thank-you emails for the people I just kept and save them in my Gmail drafts."
+  const text = 'Draft thank-you emails for the people I just kept and save them in my Gmail drafts.'
   void app.sendMessage({ role: 'user', content: [{ type: 'text', text }] }).catch(() => {})
 }
 
@@ -443,7 +497,7 @@ async function goAgain() {
   try {
     await commitLetGo()
     const batch = await tools.more()
-    if (!batch.contacts.length) throw new Error('Nobody left to deal. Your list is clean.')
+    if (!batch.contacts.length) throw new Error("Everyone's been thanked today. More tomorrow.")
     start(batch)
     if (!fake) void app.updateModelContext({ content: [{ type: 'text', text: 'I asked for five more contacts in the widget.' }] }).catch(() => {})
   } catch (error) {
@@ -476,7 +530,6 @@ function render() {
     shown = 'done'
     if (fresh) {
       buzz([14, 70, 14, 70, 30])
-      askForDrafts()
     }
     const card = done(batch)
     card.classList.toggle('deal', fresh)
